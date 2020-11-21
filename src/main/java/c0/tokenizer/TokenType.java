@@ -1,80 +1,73 @@
 package main.java.c0.tokenizer;
 
-public enum TokenType {
-    /** 空 */
-    None,
-    /** 无符号整数 */
-    Uint,
-    /** 标识符 */
-    Ident,
-    /** Begin */
-    Begin,
-    /** End */
-    End,
-    /** Var */
-    Var,
-    /** Const */
-    Const,
-    /** Print */
-    Print,
-    /** 加号 */
-    Plus,
-    /** 减号 */
-    Minus,
-    /** 乘号 */
-    Mult,
-    /** 除号 */
-    Div,
-    /** 等号 */
-    Equal,
-    /** 分号 */
-    Semicolon,
-    /** 左括号 */
-    LParen,
-    /** 右括号 */
-    RParen,
-    /** 文件尾 */
-    EOF;
+import main.java.c0.error.TokenizeError;
 
-    @Override
-    public String toString() {
-        switch (this) {
-            case None:
-                return "NullToken";
-            case Begin:
-                return "Begin";
-            case Const:
-                return "Const";
-            case Div:
-                return "DivisionSign";
-            case EOF:
-                return "EOF";
-            case End:
-                return "End";
-            case Equal:
-                return "EqualSign";
-            case Ident:
-                return "Identifier";
-            case LParen:
-                return "LeftBracket";
-            case Minus:
-                return "MinusSign";
-            case Mult:
-                return "MultiplicationSign";
-            case Plus:
-                return "PlusSign";
-            case Print:
-                return "Print";
-            case RParen:
-                return "RightBracket";
-            case Semicolon:
-                return "Semicolon";
-            case Uint:
-                return "UnsignedInteger";
-            case Var:
-                return "Var";
-            default:
-                return "InvalidToken";
+public enum TokenType {
+    NONE(""),
+    EOF(""),
+
+    //keyword
+    FN_KW("fn"),
+    LET_KW("let"),
+    CONST_KW("const"),
+    AS_KW("as"),
+    WHILE_KW("while"),
+    IF_KW("if"),
+    ELSE_KW("else"),
+    RETURN_KW("return"),
+    BREAK_KW("break"),
+    CONTINUE_KW("continue"),
+
+    //operator
+    PLUS("+"),
+    MINUS("-"),
+    MUL("*"),
+    DIV("/"),
+    ASSIGN("="),
+    EQ("=="),
+    NEQ("!="),
+    LT("<"),
+    GT(">"),
+    LE("<="),
+    GE(">="),
+    L_PAREN("("),
+    R_PAREN(")"),
+    L_BRACE("{"),
+    R_BRACE("}"),
+    ARROW("->"),
+    COMMA(","),
+    COLON(":"),
+    SEMICOLON(";"),
+
+    //identification
+    IDENT(""),
+
+    //literal
+    UINT_LITERAL(""),
+    STRING_LITERAL(""),
+    DOUBLE_LITERAL(""),
+    CHAR_LITERAL(""),
+
+    //comment
+    COMMENT(""),
+    ;
+
+    String string;
+    TokenType(String string){
+        this.string = string;
+    }
+
+    public static TokenType getTokenType(char c) {
+        StringBuilder stringBuilder = new StringBuilder(c);
+        return getTokenType(stringBuilder.toString());
+    }
+
+    public static TokenType getTokenType(String s) {
+        for(TokenType tokenType : TokenType.values()) {
+            if(tokenType.string.equals(s)) {
+                return tokenType;
+            }
         }
+        return null;
     }
 }
