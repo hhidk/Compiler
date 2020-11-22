@@ -21,7 +21,6 @@ public class Tokenizer {
     public Token nextToken() throws TokenizeError {
         it.readAll();
 
-        // 跳过之前的所有空白字符
         skipSpaceCharacters();
 
         if (it.isEOF()) {
@@ -30,21 +29,19 @@ public class Tokenizer {
 
         char peek = it.peekChar();
         if (Character.isDigit(peek)) {
-            return lexUIntLiteral();
+            return lexUIntOrDoubleLiteral();
         } else if (Character.isAlphabetic(peek) || peek == '_') {
             return lexIdentOrKeyword();
         } else if (peek == '\'') {
             return lexCharLiteral();
         } else if (peek == '"') {
             return lexStringLiteral();
-        } else if (peek == '/') {
-            return lexComment();
         } else {
-            return lexOperatorOrUnknown();
+            return lexOperatorOrCommentOrUnknown();
         }
     }
 
-    private Token lexUIntLiteral() throws TokenizeError {
+    private Token lexUIntOrDoubleLiteral() throws TokenizeError {
         Pos startPos = it.currentPos();
         StringBuilder stringBuilder = new StringBuilder();
         while (Character.isDigit(it.peekChar())) {
@@ -52,27 +49,31 @@ public class Tokenizer {
             stringBuilder.append(peek);
         }
         if (it.peekChar() == '.') {
-            throw new Error("Not Implemented");
-        }
-        else {
+            it.nextChar();
+            stringBuilder.append('.');
+            if(!Character.isDigit(it.peekChar()))
+                throw new TokenizeError(ErrorCode.InvalidInput, it.previousPos());
+            while (Character.isDigit(it.peekChar())) {
+                stringBuilder.append(it.nextChar());
+            }
+            if(it.peekChar() == 'e' || it.peekChar() == 'E') {
+                stringBuilder.append(it.nextChar());
+                if(it.peekChar() == '+' || it.peekChar() == '-') {
+                    stringBuilder.append(it.nextChar());
+                }
+                if(!Character.isDigit(it.peekChar()))
+                    throw new TokenizeError(ErrorCode.InvalidInput, it.previousPos());
+                while (Character.isDigit(it.peekChar())) {
+                    stringBuilder.append(it.nextChar());
+                }
+            }
+            double value = Double.parseDouble(stringBuilder.toString());
             Pos endPos = it.currentPos();
-            int value = Integer.parseInt(stringBuilder.toString());
-            return new Token(TokenType.UINT_LITERAL, value, startPos, endPos);
+            return new Token(TokenType.DOUBLE_LITERAL, value, startPos, endPos);
         }
-    }
-
-    private Token lexDoubleLiteral(StringBuilder stringBuilder) throws TokenizeError {
-        it.nextChar();
-        stringBuilder.append('.');
-        while (Character.isDigit(it.peekChar())) {
-            char peek = it.nextChar();
-            stringBuilder.append(peek);
-        }
-        if(it.peekChar() == 'e' || it.peekChar() == 'E') {
-            char peek = it.nextChar();
-            stringBuilder.append(peek);
-        }
-        throw new Error("Not Implemented");
+        Pos endPos = it.currentPos();
+        int value = Integer.parseInt(stringBuilder.toString());
+        return new Token(TokenType.UINT_LITERAL, value, startPos, endPos);
     }
 
     private Token lexIdentOrKeyword() throws TokenizeError {
@@ -92,24 +93,67 @@ public class Tokenizer {
     }
 
     private Token lexCharLiteral() throws TokenizeError {
-        throw new Error("Not Implemented");
+        Pos startPos = it.currentPos();
+        StringBuilder stringBuilder = new StringBuilder();
+        if(it.peekChar() == '\'') {
+            it.nextChar();
+            if(isCharRegularChar(it.peekChar())) {
+                stringBuilder.append(it.nextChar());
+            } else if(it.peekChar() == '\\') {
+                it.nextChar();
+                if(isEscapeSequenceChar(it.peekChar())) {
+                    stringBuilder.append(it.nextChar());
+                } else {
+                    throw new TokenizeError(ErrorCode.InvalidInput, it.previousPos());
+                }
+            } else {
+                throw new TokenizeError(ErrorCode.InvalidInput, it.previousPos());
+            }
+            if (it.peekChar() == '\'') {
+                it.nextChar();
+            } else {
+                throw new TokenizeError(ErrorCode.InvalidInput, it.previousPos());
+            }
+        }
+        Pos endPos = it.currentPos();
+        char value = stringBuilder.charAt(0);
+        return new Token(TokenType.CHAR_LITERAL, value, startPos, endPos);
     }
 
     private Token lexStringLiteral() throws TokenizeError {
-        throw new Error("Not Implemented");
+        Pos startPos = it.currentPos();
+        StringBuilder stringBuilder = new StringBuilder();
+        if(it.peekChar() == '"') {
+            it.nextChar();
+            while(isStringRegularChar(it.peekChar()) || it.peekChar() == '\\') {
+                if(it.peekChar() == '\\') {
+                    stringBuilder.append(it.nextChar());
+                    if(isEscapeSequenceChar(it.peekChar())) {
+                        stringBuilder.append(it.nextChar());
+                    } else {
+                        throw new TokenizeError(ErrorCode.InvalidInput, it.previousPos());
+                    }
+                } else {
+                    stringBuilder.append(it.nextChar());
+                }
+            }
+            if (it.peekChar() == '"') {
+                it.nextChar();
+            } else {
+                throw new TokenizeError(ErrorCode.InvalidInput, it.previousPos());
+            }
+        }
+        Pos endPos = it.currentPos();
+        String value = stringBuilder.toString();
+        return new Token(TokenType.STRING_LITERAL, value, startPos, endPos);
     }
 
-    private Token lexComment() throws TokenizeError {
-        throw new Error("Not Implemented");
-    }
-
-    private Token lexOperatorOrUnknown() throws TokenizeError {
+    private Token lexOperatorOrCommentOrUnknown() throws TokenizeError {
         char peek = it.nextChar();
         Pos startPos = it.currentPos();
-        switch (it.nextChar()) {
+        switch (peek) {
             case '+':
             case '*':
-            case '/':
             case ';':
             case '(':
             case ')':
@@ -149,9 +193,35 @@ public class Tokenizer {
                     return new Token(TokenType.GE, TokenType.GE.string, startPos, it.currentPos());
                 }
                 return new Token(TokenType.GT, peek, it.previousPos(), it.currentPos());
+            case '/':
+                if(it.peekChar() == '/'){
+                    it.nextChar();
+                    while(true) {
+                        if(it.nextChar() == '\\') {
+                            if(it.peekChar() == 'n') {
+                                it.nextChar();
+                                break;
+                            }
+                        }
+                    }
+                    return new Token(TokenType.COMMENT, null, startPos, it.currentPos());
+                }
+                return new Token(TokenType.DIV, peek, it.previousPos(), it.currentPos());
             default:
                 throw new TokenizeError(ErrorCode.InvalidInput, it.previousPos());
         }
+    }
+
+    private boolean isCharRegularChar(char c) {
+        return (c != '\'') && (c != '\\');
+    }
+
+    private boolean isStringRegularChar(char c) {
+        return (c != '"') && (c != '\\');
+    }
+
+    private boolean isEscapeSequenceChar(char c) {
+        return (c == '\\') || (c == '"') || (c == '\'') || (c == 'n') || (c == 'r') || (c == 't');
     }
 
     private void skipSpaceCharacters() {
