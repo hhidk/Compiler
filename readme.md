@@ -1,3 +1,3 @@
-编译原理大作业
+# miniplc0-java
 
-18373277 何辰之
+这里是 miniplc0 实验的 Java 版本。

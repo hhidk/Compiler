@@ -1,6 +1,6 @@
-package main.java.c0.tokenizer;
+package miniplc0java.tokenizer;
 
-import main.java.c0.error.TokenizeError;
+import miniplc0java.error.TokenizeError;
 
 public enum TokenType {
     NONE(""),

@@ -1,8 +1,8 @@
-package main.java.c0.tokenizer;
+package miniplc0java.tokenizer;
 
-import main.java.c0.error.ErrorCode;
-import main.java.c0.error.TokenizeError;
-import main.java.c0.util.Pos;
+import miniplc0java.error.ErrorCode;
+import miniplc0java.error.TokenizeError;
+import miniplc0java.util.Pos;
 
 public class Tokenizer {
 
