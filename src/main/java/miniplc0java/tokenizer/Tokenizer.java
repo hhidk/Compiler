@@ -72,7 +72,7 @@ public class Tokenizer {
             return new Token(TokenType.DOUBLE_LITERAL, value, startPos, endPos);
         }
         Pos endPos = it.currentPos();
-        int value = Integer.parseInt(stringBuilder.toString());
+        long value = Long.parseLong(stringBuilder.toString());
         return new Token(TokenType.UINT_LITERAL, value, startPos, endPos);
     }
 
