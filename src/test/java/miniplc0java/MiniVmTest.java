@@ -11,7 +11,6 @@ import org.junit.Test;
 
 import miniplc0java.instruction.Instruction;
 import miniplc0java.instruction.Operation;
-import miniplc0java.vm.MiniVm;
 
 public class MiniVmTest {
 
