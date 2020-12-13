@@ -356,19 +356,84 @@ public final class Analyser {
         // expr -> operator_expr | negate_expr | assign_expr | as_expr
         //       | call_expr | literal_expr | ident_expr | group_expr
 
+        analyseExpr1();
         TokenType tt = peek().getTokenType();
-        if (tt == TokenType.UINT_LITERAL || tt == TokenType.STRING_LITERAL || tt == TokenType.CHAR_LITERAL) {
-            //
-        } else if (tt == TokenType.IDENT) {
-            //
-        } else if (tt == TokenType.L_PAREN) {
-            //
-        } else if (tt == TokenType.MINUS) {
-            //
-        } else {
-            //
+        if (tt == TokenType.ASSIGN) {
+            analyseExpr1();
         }
+        // todo: symbol
+    }
 
+    private void analyseExpr1() throws CompileError {
+        analyseExpr2();
+        TokenType tt = peek().getTokenType();
+        if (tt == TokenType.GT || tt == TokenType.LT || tt == TokenType.GE
+            || tt == TokenType.LE || tt == TokenType.EQ || tt == TokenType.NEQ) {
+            analyseExpr2();
+        }
+        // todo: symbol
+    }
+
+    private void analyseExpr2() throws CompileError {
+        analyseExpr3();
+        TokenType tt = peek().getTokenType();
+        if (tt == TokenType.PLUS || tt == TokenType.MINUS) {
+            analyseExpr3();
+        }
+        // todo: symbol
+    }
+
+    private void analyseExpr3() throws CompileError {
+        analyseExpr4();
+        TokenType tt = peek().getTokenType();
+        if (tt == TokenType.MUL || tt == TokenType.DIV) {
+            analyseExpr4();
+        }
+        // todo: symbol
+    }
+
+    private void analyseExpr4() throws CompileError {
+        analyseExpr5();
+        TokenType tt = peek().getTokenType();
+        if (tt == TokenType.AS_KW) {
+            String type = analyseType();
+        }
+        // todo: symbol
+    }
+
+    private void analyseExpr5() throws CompileError {
+        TokenType tt = peek().getTokenType();
+        boolean isNeg = false;
+        if (tt == TokenType.MINUS) {
+            next();
+            isNeg = true;
+        }
+        analyseExpr6();
+        // todo: symbol
+    }
+
+    private void analyseExpr6() throws CompileError {
+        TokenType tt = peek().getTokenType();
+        if (tt == TokenType.L_PAREN) {
+            next();
+            analyseExpr();
+            expect(TokenType.R_PAREN);
+        } else if (tt == TokenType.UINT_LITERAL || tt == TokenType.CHAR_LITERAL || tt == TokenType.STRING_LITERAL) {
+            next();
+        } else if (tt == TokenType.IDENT) {
+            next();
+            if (peek().getTokenType() == TokenType.L_PAREN) {
+                next();
+                analyseCallParamList();
+                expect(TokenType.R_PAREN);
+            }
+        } else {
+            throw new Error("yinggaijinbulai");
+        }
+        // todo: symbol
+    }
+
+    private void analyseCallParamList() throws CompileError {
         throw new Error("Not implemented");
     }
 
