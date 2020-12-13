@@ -5,9 +5,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 
 import miniplc0java.analyser.Analyser;
 import miniplc0java.error.CompileError;
@@ -93,18 +91,18 @@ public class App {
         } else if (result.getBoolean("analyse")) {
             // analyze
             var analyzer = new Analyser(tokenizer);
-            List<Instruction> instructions;
+            Map<String, Object> map = new HashMap<>();
             try {
-                instructions = analyzer.analyse();
+                map = analyzer.analyse();
             } catch (Exception e) {
                 // 遇到错误不输出，直接退出
                 System.err.println(e);
                 System.exit(0);
                 return;
             }
-            for (Instruction instruction : instructions) {
-                output.println(instruction.toString());
-            }
+//            for (Instruction instruction : instructions) {
+//                output.println(instruction.toString());
+//            }
         } else {
             System.err.println("Please specify either '--analyse' or '--tokenize'.");
             System.exit(3);

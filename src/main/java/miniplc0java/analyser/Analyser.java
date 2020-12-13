@@ -18,17 +18,26 @@ import java.util.*;
 public final class Analyser {
 
     Tokenizer tokenizer;
-    ArrayList<Instruction> instructions;
+
+    /**
+     * 全局符号表
+     */
+    HashMap<String, SymbolEntry> globalTable;
+
+    /**
+     * 函数符号表及指令集
+     */
+    List<FunctionTable> functionTables;
+
+    /**
+     * 当前函数
+     */
+    FunctionTable functionTable;
 
     /**
      * 当前偷看的 token
      */
     Token peekedToken = null;
-
-    /**
-     * 符号表
-     */
-    SymbolTable symbolTable = new SymbolTable();
 
     /**
      * 下一个变量的栈偏移
@@ -37,12 +46,65 @@ public final class Analyser {
 
     public Analyser(Tokenizer tokenizer) {
         this.tokenizer = tokenizer;
-        this.instructions = new ArrayList<>();
+        this.globalTable = new LinkedHashMap<>();
+        this.functionTables = new ArrayList<>();
+        this.functionTable = init_start();
     }
 
-    public List<Instruction> analyse() throws CompileError {
+    public Map<String, Object> analyse() throws CompileError {
         analyseProgram();
-        return instructions;
+        Map<String, Object> map = new HashMap<>();
+        map.put("globalTable", globalTable);
+        map.put("functionTables", functionTables);
+        return map;
+    }
+
+    public FunctionTable init_start() {
+        FunctionTable functionTable = new FunctionTable(0);
+        functionTables.add(functionTable);
+        globalTable.put("_start", new SymbolEntry(false, true, getNextVariableOffset(), 1, 0, 0, 0));
+        return functionTable;
+    }
+
+    public SymbolEntry getSymbolEntry(String name) {
+        if (functionTable.argsTable.get(name) != null) {
+            return functionTable.argsTable.get(name);
+        } else if (functionTable.localTable.get(name) != null) {
+            return functionTable.localTable.get(name);
+        } else {
+            return globalTable.get(name);
+        }
+    }
+
+    public void startFunction(String name, Pos curPos) throws AnalyzeError {
+        if (globalTable.get(name) != null) {
+            throw new AnalyzeError(ErrorCode.DuplicateDeclaration, curPos);
+        }
+        int order = globalTable.size();
+        globalTable.put(name, new SymbolEntry(false, true, getNextVariableOffset(), 1, 0, 0, order));
+        this.functionTable = new FunctionTable(order);
+    }
+
+    public void endFunction() {
+        functionTables.add(functionTable);
+        this.functionTable = functionTables.get(0);
+    }
+
+    public void addSymbol(String name, boolean isInitialized, boolean isConstant, Pos curPos, int type, boolean isArg) throws AnalyzeError {
+        if (getSymbolEntry(name) != null) {
+            throw new AnalyzeError(ErrorCode.DuplicateDeclaration, curPos);
+        }
+        int order;
+        if (this.functionTable.order == 0) {
+            order = globalTable.size();
+            globalTable.put(name, new SymbolEntry(isConstant, isInitialized, getNextVariableOffset(), 1, type, 0, order));
+        } else if (isArg) {
+            order = this.functionTable.argsTable.size();
+            this.functionTable.argsTable.put(name, new SymbolEntry(isConstant, isInitialized, getNextVariableOffset(), 1, type, 1, order));
+        } else {
+            order = this.functionTable.localTable.size();
+            this.functionTable.localTable.put(name, new SymbolEntry(isConstant, isInitialized, getNextVariableOffset(), 1, type, 1, order));
+        }
     }
 
     /**
@@ -295,13 +357,13 @@ public final class Analyser {
         //       | call_expr | literal_expr | ident_expr | group_expr
 
         TokenType tt = peek().getTokenType();
-        if (tt == TokenType.MINUS) {
+        if (tt == TokenType.UINT_LITERAL || tt == TokenType.STRING_LITERAL || tt == TokenType.CHAR_LITERAL) {
             //
         } else if (tt == TokenType.IDENT) {
             //
         } else if (tt == TokenType.L_PAREN) {
             //
-        } else if (tt == TokenType.UINT_LITERAL || tt == TokenType.STRING_LITERAL || tt == TokenType.CHAR_LITERAL) {
+        } else if (tt == TokenType.MINUS) {
             //
         } else {
             //
