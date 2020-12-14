@@ -5,7 +5,7 @@ public class SymbolEntry {
     boolean isInitialized;
     int stackOffset;
     int def; //0变量，1函数
-    int type; //0void，1int，2double
+    String type; //0void，1int，2double
     int scope; //0全局，1参数，2局部
     int order;
 
@@ -14,7 +14,7 @@ public class SymbolEntry {
      * @param isDeclared
      * @param stackOffset
      */
-    public SymbolEntry(boolean isConstant, boolean isDeclared, int stackOffset, int def, int type, int scope, int order) {
+    public SymbolEntry(boolean isConstant, boolean isDeclared, int stackOffset, int def, String type, int scope, int order) {
         this.isConstant = isConstant;
         this.isInitialized = isDeclared;
         this.stackOffset = stackOffset;

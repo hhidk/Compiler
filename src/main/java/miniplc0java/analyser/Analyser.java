@@ -27,7 +27,7 @@ public final class Analyser {
     /**
      * 函数符号表及指令集
      */
-    List<FunctionTable> functionTables;
+    HashMap<String, FunctionTable> functionTables;
 
     /**
      * 当前函数
@@ -47,7 +47,7 @@ public final class Analyser {
     public Analyser(Tokenizer tokenizer) {
         this.tokenizer = tokenizer;
         this.globalTable = new LinkedHashMap<>();
-        this.functionTables = new ArrayList<>();
+        this.functionTables = new LinkedHashMap<>();
         this.functionTable = init_start();
     }
 
@@ -61,8 +61,8 @@ public final class Analyser {
 
     public FunctionTable init_start() {
         FunctionTable functionTable = new FunctionTable(0);
-        functionTables.add(functionTable);
-        globalTable.put("_start", new SymbolEntry(false, true, getNextVariableOffset(), 1, 0, 0, 0));
+        functionTables.put("_start",functionTable);
+        globalTable.put("_start", new SymbolEntry(false, true, getNextVariableOffset(), 1, "void", 0, 0));
         return functionTable;
     }
 
@@ -81,30 +81,48 @@ public final class Analyser {
             throw new AnalyzeError(ErrorCode.DuplicateDeclaration, curPos);
         }
         int order = globalTable.size();
-        globalTable.put(name, new SymbolEntry(false, true, getNextVariableOffset(), 1, 0, 0, order));
+        globalTable.put(name, new SymbolEntry(false, true, getNextVariableOffset(), 1, "void", 0, order));
         this.functionTable = new FunctionTable(order);
     }
 
-    public void endFunction() {
-        functionTables.add(functionTable);
+    public void endFunction(String name, String type) {
+        this.functionTable.setType(type);
+        functionTables.put(name, functionTable);
         this.functionTable = functionTables.get(0);
     }
 
-    public void addSymbol(String name, boolean isInitialized, boolean isConstant, Pos curPos, int type, boolean isArg) throws AnalyzeError {
+    public SymbolEntry addSymbol(String name, boolean isInitialized, boolean isConstant, Pos curPos, String type, boolean isArg) throws AnalyzeError {
         if (getSymbolEntry(name) != null) {
             throw new AnalyzeError(ErrorCode.DuplicateDeclaration, curPos);
         }
         int order;
+        SymbolEntry symbol;
         if (this.functionTable.order == 0) {
             order = globalTable.size();
-            globalTable.put(name, new SymbolEntry(isConstant, isInitialized, getNextVariableOffset(), 1, type, 0, order));
+            symbol = new SymbolEntry(isConstant, isInitialized, getNextVariableOffset(), 1, type, 0, order);
+            globalTable.put(name, symbol);
         } else if (isArg) {
             order = this.functionTable.argsTable.size();
-            this.functionTable.argsTable.put(name, new SymbolEntry(isConstant, isInitialized, getNextVariableOffset(), 1, type, 1, order));
+            symbol = new SymbolEntry(isConstant, isInitialized, getNextVariableOffset(), 1, type, 1, order);
+            this.functionTable.argsTable.put(name, symbol);
         } else {
             order = this.functionTable.localTable.size();
-            this.functionTable.localTable.put(name, new SymbolEntry(isConstant, isInitialized, getNextVariableOffset(), 1, type, 1, order));
+            symbol = new SymbolEntry(isConstant, isInitialized, getNextVariableOffset(), 1, type, 1, order);
+            this.functionTable.localTable.put(name, symbol);
         }
+        return symbol;
+    }
+
+    public void addInstruction(Operation opt, Integer x) {
+        this.functionTable.body.add(new Instruction(opt, x));
+    }
+
+    public void addInstruction(Operation opt, Long x) {
+        this.functionTable.body.add(new Instruction(opt, x));
+    }
+
+    public void addInstruction(Operation opt) {
+        this.functionTable.body.add(new Instruction(opt));
     }
 
     /**
@@ -216,7 +234,11 @@ public final class Analyser {
         // function -> 'fn' IDENT '(' function_param_list? ')' '->' ty block_stmt
 
         expect(TokenType.FN_KW);
-        expect(TokenType.IDENT);
+        var nameToken = expect(TokenType.IDENT);
+
+        String name = (String) nameToken.getValue();
+        startFunction(name, nameToken.getStartPos());
+
         expect(TokenType.L_PAREN);
         if (peek().getTokenType() == TokenType.CONST_KW ||
             peek().getTokenType() == TokenType.IDENT) {
@@ -224,8 +246,10 @@ public final class Analyser {
         }
         expect(TokenType.R_PAREN);
         expect(TokenType.ARROW);
-        String type = analyseType();//todo
+        String type = analyseType();
         analyseBlockStmt();
+
+        endFunction(name, type);
     }
 
     private void analyseFunctionParamList() throws CompileError {
@@ -240,13 +264,16 @@ public final class Analyser {
     private void analyseFunctionParam() throws CompileError {
         // function_param -> 'const'? IDENT ':' ty
 
-        if (peek().getTokenType() == TokenType.CONST_KW) {
-            //todo:const not implemented
-            next();
+        boolean isConstant = false, isInitialized = true, isArg = true;
+        if (nextIf(TokenType.CONST_KW) != null) {
+            isConstant = true;
         }
-        expect(TokenType.IDENT);//todo: param name not implemented
+        var nameToken = expect(TokenType.IDENT);
         expect(TokenType.COLON);
-        String type = analyseType();//todo
+        String type = analyseType();
+
+        String name = (String) nameToken.getValue();
+        addSymbol(name, isInitialized, isConstant, nameToken.getStartPos(), type, isArg);
     }
 
     private void analyseBlockStmt() throws CompileError {
@@ -282,34 +309,48 @@ public final class Analyser {
     private void analyseLetDeclStmt() throws CompileError {
         // let_decl_stmt -> 'let' IDENT ':' ty ('=' expr)? ';'
 
+        boolean isConstant = false, isInitialized = false, isArg = false;
         expect(TokenType.LET_KW);
-        expect(TokenType.IDENT);//todo
+        var nameToken = expect(TokenType.IDENT);
         expect(TokenType.COLON);
-        String type = analyseType();//todo
+
+        String type = analyseType();
+        if (type.equals("void"))
+            throw new Error("Illegal type");
+        String name = (String) nameToken.getValue();
+        SymbolEntry symbolEntry = addSymbol(name, isInitialized, isConstant, nameToken.getStartPos(), type, isArg);
+
+        if (symbolEntry.scope == 0) {
+            addInstruction(Operation.globa, symbolEntry.order);
+        } else if (symbolEntry.scope == 2) {
+            addInstruction(Operation.loca, symbolEntry.order);
+        }
+
         if (peek().getTokenType() == TokenType.ASSIGN) {
             expect(TokenType.ASSIGN);
-            if (isExpr())
-                analyseExpr();
-            else
-                throw new Error("Expression illegal");
+            analyseExpr();
+            isInitialized = true;
         }
         expect(TokenType.SEMICOLON);
+
+        addInstruction(Operation.store64);
+
     }
 
     private void analyseConstDeclStmt() throws CompileError {
         // const_decl_stmt -> 'const' IDENT ':' ty '=' expr ';'
 
+        boolean isConstant = true, isInitialized = true, isArg = false;
         expect(TokenType.CONST_KW);
-        expect(TokenType.IDENT);//todo
+        var nameToken = expect(TokenType.IDENT);
         expect(TokenType.COLON);
-        String type = analyseType();//todo
-        if (peek().getTokenType() == TokenType.ASSIGN) {
-            expect(TokenType.ASSIGN);
-            if (isExpr())
-                analyseExpr();
-            else
-                throw new Error("Expression illegal");
-        }
+        String type = analyseType();
+
+        String name = (String) nameToken.getValue();
+        SymbolEntry symbolEntry = addSymbol(name, isInitialized, isConstant, nameToken.getStartPos(), type, isArg);
+
+        expect(TokenType.ASSIGN);
+        analyseExpr();
         expect(TokenType.SEMICOLON);
     }
 
@@ -356,6 +397,15 @@ public final class Analyser {
         // expr -> operator_expr | negate_expr | assign_expr | as_expr
         //       | call_expr | literal_expr | ident_expr | group_expr
 
+        // operator_expr -> expr binary_operator expr
+        // negate_expr -> '-' expr
+        // assign_expr -> l_expr '=' expr
+        // as_expr -> expr 'as' ty
+        // call_expr -> IDENT '(' call_param_list? ')'
+        // literal_expr -> UINT_LITERAL | DOUBLE_LITERAL | STRING_LITERAL | CHAR_LITERAL
+        // ident_expr -> IDENT
+        // group_expr -> '(' expr ')'
+
         analyseExpr1();
         TokenType tt = peek().getTokenType();
         if (tt == TokenType.ASSIGN) {
@@ -369,6 +419,7 @@ public final class Analyser {
         TokenType tt = peek().getTokenType();
         if (tt == TokenType.GT || tt == TokenType.LT || tt == TokenType.GE
             || tt == TokenType.LE || tt == TokenType.EQ || tt == TokenType.NEQ) {
+            var operatorToken = next();
             analyseExpr2();
         }
         // todo: symbol
@@ -378,6 +429,7 @@ public final class Analyser {
         analyseExpr3();
         TokenType tt = peek().getTokenType();
         if (tt == TokenType.PLUS || tt == TokenType.MINUS) {
+            var operatorToken = next();
             analyseExpr3();
         }
         // todo: symbol
@@ -387,6 +439,7 @@ public final class Analyser {
         analyseExpr4();
         TokenType tt = peek().getTokenType();
         if (tt == TokenType.MUL || tt == TokenType.DIV) {
+            var operatorToken = next();
             analyseExpr4();
         }
         // todo: symbol
@@ -394,8 +447,7 @@ public final class Analyser {
 
     private void analyseExpr4() throws CompileError {
         analyseExpr5();
-        TokenType tt = peek().getTokenType();
-        if (tt == TokenType.AS_KW) {
+        if (nextIf(TokenType.AS_KW) != null) {
             String type = analyseType();
         }
         // todo: symbol
@@ -404,8 +456,7 @@ public final class Analyser {
     private void analyseExpr5() throws CompileError {
         TokenType tt = peek().getTokenType();
         boolean isNeg = false;
-        if (tt == TokenType.MINUS) {
-            next();
+        if (nextIf(TokenType.MINUS) != null) {
             isNeg = true;
         }
         analyseExpr6();
@@ -414,26 +465,33 @@ public final class Analyser {
 
     private void analyseExpr6() throws CompileError {
         TokenType tt = peek().getTokenType();
-        if (tt == TokenType.L_PAREN) {
-            next();
+        if (nextIf(TokenType.L_PAREN) != null) {
             analyseExpr();
             expect(TokenType.R_PAREN);
         } else if (tt == TokenType.UINT_LITERAL || tt == TokenType.CHAR_LITERAL || tt == TokenType.STRING_LITERAL) {
-            next();
+            var nameToken = next();
+            // todo
         } else if (tt == TokenType.IDENT) {
-            next();
-            if (peek().getTokenType() == TokenType.L_PAREN) {
-                next();
-                analyseCallParamList();
-                expect(TokenType.R_PAREN);
+            var nameToken = next();
+            if (nextIf(TokenType.L_PAREN) != null) {
+                if (nextIf(TokenType.R_PAREN) == null) {
+                    analyseCallParamList();
+                    expect(TokenType.R_PAREN);
+                }
             }
         } else {
-            throw new Error("yinggaijinbulai");
+            throw new Error("Illegal Expression");
         }
         // todo: symbol
     }
 
     private void analyseCallParamList() throws CompileError {
+        // call_param_list -> expr (',' expr)*
+
+        analyseExpr();
+        while (nextIf(TokenType.COMMA) != null) {
+            analyseExpr();
+        }
         throw new Error("Not implemented");
     }
 

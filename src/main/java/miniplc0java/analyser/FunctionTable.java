@@ -11,7 +11,7 @@ public class FunctionTable {
     // 函数在全局变量表中的序号
     int order;
     // 返回值类型
-    int type;
+    String type;
     // 函数体
     List<Instruction> body;
     // 参数表
@@ -26,7 +26,7 @@ public class FunctionTable {
         this.localTable = new LinkedHashMap<>();
     }
 
-    public void setType(int type) {
+    public void setType(String type) {
         this.type = type;
     }
 }
