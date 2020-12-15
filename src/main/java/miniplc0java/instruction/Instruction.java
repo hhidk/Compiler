@@ -21,6 +21,11 @@ public class Instruction {
         this.x = x;
     }
 
+    public Instruction(Operation opt, Double x) {
+        this.opt = opt;
+        this.x = x;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o)
@@ -42,5 +47,13 @@ public class Instruction {
 
     public Object getX() {
         return x;
+    }
+
+    public void setOpt(Operation opt) {
+        this.opt = opt;
+    }
+
+    public void setX(Object x) {
+        this.x = x;
     }
 }

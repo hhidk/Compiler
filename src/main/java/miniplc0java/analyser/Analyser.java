@@ -113,16 +113,33 @@ public final class Analyser {
         return symbol;
     }
 
-    public void addInstruction(Operation opt, Integer x) {
-        this.functionTable.body.add(new Instruction(opt, x));
+    public SymbolEntry addString(String value) {
+        int order = globalTable.size();
+        SymbolEntry symbol = new SymbolEntry(true, true, getNextVariableOffset(), 1, "string", 0, order);
+        globalTable.put(value + order, symbol);
+        return symbol;
+    }
+
+    public Instruction addInstruction(Operation opt, Integer x) {
+        Instruction instruction = new Instruction(opt, x);
+        this.functionTable.body.add(instruction);
+        return instruction;
     }
 
     public void addInstruction(Operation opt, Long x) {
         this.functionTable.body.add(new Instruction(opt, x));
     }
 
+    public void addInstruction(Operation opt, Double x) {
+        this.functionTable.body.add(new Instruction(opt, x));
+    }
+
     public void addInstruction(Operation opt) {
         this.functionTable.body.add(new Instruction(opt));
+    }
+
+    public int getInstructionOffset() {
+        return this.functionTable.body.size();
     }
 
     /**
@@ -309,14 +326,14 @@ public final class Analyser {
     private void analyseLetDeclStmt() throws CompileError {
         // let_decl_stmt -> 'let' IDENT ':' ty ('=' expr)? ';'
 
-        boolean isConstant = false, isInitialized = false, isArg = false;
         expect(TokenType.LET_KW);
         var nameToken = expect(TokenType.IDENT);
         expect(TokenType.COLON);
-
         String type = analyseType();
         if (type.equals("void"))
             throw new Error("Illegal type");
+
+        boolean isConstant = false, isInitialized = false, isArg = false;
         String name = (String) nameToken.getValue();
         SymbolEntry symbolEntry = addSymbol(name, isInitialized, isConstant, nameToken.getStartPos(), type, isArg);
 
@@ -328,40 +345,58 @@ public final class Analyser {
 
         if (peek().getTokenType() == TokenType.ASSIGN) {
             expect(TokenType.ASSIGN);
-            analyseExpr();
-            isInitialized = true;
+            String exprType = analyseExpr();
+            if (!type.equals(exprType))
+                throw new Error("Illegal declaration");
+            symbolEntry.setInitialized(true);
+            addInstruction(Operation.store64);
         }
         expect(TokenType.SEMICOLON);
 
-        addInstruction(Operation.store64);
 
     }
 
     private void analyseConstDeclStmt() throws CompileError {
         // const_decl_stmt -> 'const' IDENT ':' ty '=' expr ';'
 
-        boolean isConstant = true, isInitialized = true, isArg = false;
         expect(TokenType.CONST_KW);
         var nameToken = expect(TokenType.IDENT);
         expect(TokenType.COLON);
         String type = analyseType();
+        if (type.equals("void"))
+            throw new Error("Illegal type");
 
+        boolean isConstant = true, isInitialized = true, isArg = false;
         String name = (String) nameToken.getValue();
         SymbolEntry symbolEntry = addSymbol(name, isInitialized, isConstant, nameToken.getStartPos(), type, isArg);
 
+        if (symbolEntry.scope == 0) {
+            addInstruction(Operation.globa, symbolEntry.order);
+        } else if (symbolEntry.scope == 2) {
+            addInstruction(Operation.loca, symbolEntry.order);
+        }
+
         expect(TokenType.ASSIGN);
-        analyseExpr();
+        String exprType = analyseExpr();
+        if (!type.equals(exprType))
+            throw new Error("Illegal declaration");
         expect(TokenType.SEMICOLON);
+        addInstruction(Operation.store64);
     }
 
     private void analyseIfStmt() throws CompileError {
         // if_stmt -> 'if' expr block_stmt ('else' (block_stmt | if_stmt))?
 
         expect(TokenType.IF_KW);
-        if (isExpr())
-            analyseExpr();
-        else
-            throw new Error("Expression illegal");
+        analyseExpr();
+        Instruction br1 = addInstruction(Operation.brfalse, 0);
+        int offset1 = getInstructionOffset();
+
+        analyseBlockStmt();
+        Instruction br2 = addInstruction(Operation.brfalse, 0);
+        int offset2 = getInstructionOffset();
+        br1.setX(offset2 - offset1);
+
         if (nextIf(TokenType.ELSE_KW) != null) {
             if (peek().getTokenType() == TokenType.L_BRACE) {
                 analyseBlockStmt();
@@ -371,29 +406,41 @@ public final class Analyser {
                 throw new Error("If Statement not completed");
             }
         }
+        int offset3 = getInstructionOffset();
+        br2.setX(offset3 - offset2);
+
     }
 
     private void analyseWhileStmt() throws CompileError {
         // while_stmt -> 'while' expr block_stmt
 
         expect(TokenType.WHILE_KW);
-        if (isExpr())
-            analyseExpr();
-        else
-            throw new Error("Expression illegal");
+        int offset1 = getInstructionOffset();
+
+        analyseExpr();
+        Instruction br1 = addInstruction(Operation.brfalse, 0);
+        int offset2 = getInstructionOffset();
+
         analyseBlockStmt();
+        Instruction br2 = addInstruction(Operation.br, 0);
+        int offset3 = getInstructionOffset();
+        br2.setX(offset1 - offset3);
+        br1.setX(offset3 - offset2);
     }
 
     private void analyseReturnStmt() throws CompileError {
         // return_stmt -> 'return' expr? ';'
 
         expect(TokenType.RETURN_KW);
-        if (isExpr())
-            analyseExpr();
+        String exprType = analyseExpr();
+        if (!this.functionTable.type.equals(exprType))
+            throw new Error("Illegal return type");
         expect(TokenType.SEMICOLON);
+
+        addInstruction(Operation.ret);
     }
 
-    private void analyseExpr() throws CompileError {
+    private String analyseExpr() throws CompileError {
         // expr -> operator_expr | negate_expr | assign_expr | as_expr
         //       | call_expr | literal_expr | ident_expr | group_expr
 
@@ -407,17 +454,17 @@ public final class Analyser {
         // group_expr -> '(' expr ')'
 
         analyseExpr1();
-        TokenType tt = peek().getTokenType();
-        if (tt == TokenType.ASSIGN) {
-            analyseExpr1();
+        if (nextIf(TokenType.ASSIGN) != null) {
+            analyseExpr();
         }
         // todo: symbol
+        throw new Error("not implemented");
     }
 
     private void analyseExpr1() throws CompileError {
         analyseExpr2();
         TokenType tt = peek().getTokenType();
-        if (tt == TokenType.GT || tt == TokenType.LT || tt == TokenType.GE
+        while (tt == TokenType.GT || tt == TokenType.LT || tt == TokenType.GE
             || tt == TokenType.LE || tt == TokenType.EQ || tt == TokenType.NEQ) {
             var operatorToken = next();
             analyseExpr2();
@@ -428,7 +475,7 @@ public final class Analyser {
     private void analyseExpr2() throws CompileError {
         analyseExpr3();
         TokenType tt = peek().getTokenType();
-        if (tt == TokenType.PLUS || tt == TokenType.MINUS) {
+        while (tt == TokenType.PLUS || tt == TokenType.MINUS) {
             var operatorToken = next();
             analyseExpr3();
         }
@@ -438,7 +485,7 @@ public final class Analyser {
     private void analyseExpr3() throws CompileError {
         analyseExpr4();
         TokenType tt = peek().getTokenType();
-        if (tt == TokenType.MUL || tt == TokenType.DIV) {
+        while (tt == TokenType.MUL || tt == TokenType.DIV) {
             var operatorToken = next();
             analyseExpr4();
         }
@@ -447,7 +494,7 @@ public final class Analyser {
 
     private void analyseExpr4() throws CompileError {
         analyseExpr5();
-        if (nextIf(TokenType.AS_KW) != null) {
+        while (nextIf(TokenType.AS_KW) != null) {
             String type = analyseType();
         }
         // todo: symbol
@@ -456,7 +503,7 @@ public final class Analyser {
     private void analyseExpr5() throws CompileError {
         TokenType tt = peek().getTokenType();
         boolean isNeg = false;
-        if (nextIf(TokenType.MINUS) != null) {
+        while (nextIf(TokenType.MINUS) != null) {
             isNeg = true;
         }
         analyseExpr6();
@@ -465,14 +512,14 @@ public final class Analyser {
 
     private void analyseExpr6() throws CompileError {
         TokenType tt = peek().getTokenType();
+        String type;
         if (nextIf(TokenType.L_PAREN) != null) {
             analyseExpr();
             expect(TokenType.R_PAREN);
         } else if (tt == TokenType.UINT_LITERAL || tt == TokenType.CHAR_LITERAL || tt == TokenType.STRING_LITERAL) {
-            var nameToken = next();
-            // todo
+            type = analyseLiteral();
         } else if (tt == TokenType.IDENT) {
-            var nameToken = next();
+            var nameToken = next();// todo
             if (nextIf(TokenType.L_PAREN) != null) {
                 if (nextIf(TokenType.R_PAREN) == null) {
                     analyseCallParamList();
@@ -485,6 +532,27 @@ public final class Analyser {
         // todo: symbol
     }
 
+    private String analyseLiteral() throws CompileError {
+        var nameToken = next();
+        TokenType tt = nameToken.getTokenType();
+        switch (tt) {
+            case UINT_LITERAL:
+            case CHAR_LITERAL:
+                addInstruction(Operation.push, (Long) nameToken.getValue());
+                return "int";
+            case STRING_LITERAL:
+                SymbolEntry symbol = addString((String) nameToken.getValue());
+                int order = symbol.order;
+                addInstruction(Operation.push, order);
+                return "string";
+            case DOUBLE_LITERAL:
+                addInstruction(Operation.push, (Double) nameToken.getValue());
+                return "double";
+            default:
+                return null;
+        }
+    }
+
     private void analyseCallParamList() throws CompileError {
         // call_param_list -> expr (',' expr)*
 
@@ -492,7 +560,6 @@ public final class Analyser {
         while (nextIf(TokenType.COMMA) != null) {
             analyseExpr();
         }
-        throw new Error("Not implemented");
     }
 
     private String analyseType() throws CompileError {
