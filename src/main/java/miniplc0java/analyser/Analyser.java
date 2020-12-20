@@ -62,7 +62,7 @@ public final class Analyser {
     public FunctionTable init_start() {
         FunctionTable functionTable = new FunctionTable(0);
         functionTables.put("_start",functionTable);
-        globalTable.put("_start", new SymbolEntry(false, true, getNextVariableOffset(), 1, "void", 0, 0));
+        globalTable.put("_start", new SymbolEntry(false, true, getNextVariableOffset(), 1, "void", 0, 0, 6));
         return functionTable;
     }
 
@@ -163,7 +163,7 @@ public final class Analyser {
             throw new AnalyzeError(ErrorCode.DuplicateDeclaration, curPos);
         }
         int order = globalTable.size();
-        globalTable.put(name, new SymbolEntry(false, true, getNextVariableOffset(), 1, "void", 0, order));
+        globalTable.put(name, new SymbolEntry(false, true, getNextVariableOffset(), 1, "string", 0, order, name.length()));
         this.functionTable = new FunctionTable(order);
     }
 
@@ -197,7 +197,7 @@ public final class Analyser {
 
     public SymbolEntry addString(String value) {
         int order = globalTable.size();
-        SymbolEntry symbol = new SymbolEntry(true, true, getNextVariableOffset(), 1, "string", 0, order);
+        SymbolEntry symbol = new SymbolEntry(true, true, getNextVariableOffset(), 1, "string", 0, order, value.length());
         globalTable.put(value + order, symbol);
         return symbol;
     }

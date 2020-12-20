@@ -8,6 +8,8 @@ import java.io.PrintStream;
 import java.util.*;
 
 import miniplc0java.analyser.Analyser;
+import miniplc0java.analyser.FunctionTable;
+import miniplc0java.analyser.SymbolEntry;
 import miniplc0java.error.CompileError;
 import miniplc0java.instruction.Instruction;
 import miniplc0java.tokenizer.StringIter;
@@ -15,6 +17,9 @@ import miniplc0java.tokenizer.Token;
 
 import miniplc0java.tokenizer.TokenType;
 import miniplc0java.tokenizer.Tokenizer;
+import miniplc0java.vm.FunctionDef;
+import miniplc0java.vm.GlobalDef;
+import miniplc0java.vm.o0;
 import net.sourceforge.argparse4j.*;
 import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
@@ -92,7 +97,10 @@ public class App {
             // analyze
             var analyzer = new Analyser(tokenizer);
             Map<String, Object> map = analyzer.analyse();
-            // todo
+            HashMap<String, SymbolEntry> globalTable = (HashMap<String, SymbolEntry>) map.get("globalTable");
+            HashMap<String, FunctionTable> functionTables = (HashMap<String, FunctionTable>) map.get("functionTables");
+            o0 o00 = new o0(globalTable, functionTables);
+            // printO0(o00, output);
         } else {
             System.err.println("Please specify either '--analyse' or '--tokenize'.");
             System.exit(3);

@@ -18,6 +18,7 @@ public class FunctionTable {
 
     public FunctionTable(int order) {
         this.order = order;
+        this.type = "void";
         this.body = new ArrayList<>();
         this.argsTable = new LinkedHashMap<>();
         this.localTable = new LinkedHashMap<>();
@@ -25,5 +26,25 @@ public class FunctionTable {
 
     public void setType(String type) {
         this.type = type;
+    }
+
+    public int getOrder() {
+        return order;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public List<Instruction> getBody() {
+        return body;
+    }
+
+    public HashMap<String, SymbolEntry> getArgsTable() {
+        return argsTable;
+    }
+
+    public HashMap<String, SymbolEntry> getLocalTable() {
+        return localTable;
     }
 }

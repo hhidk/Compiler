@@ -1,5 +1,6 @@
 package miniplc0java.vm;
 
+import miniplc0java.analyser.FunctionTable;
 import miniplc0java.analyser.SymbolEntry;
 import miniplc0java.instruction.Instruction;
 
@@ -18,4 +19,22 @@ public class FunctionDef {
     int loc_slots;
     // 函数体
     List<Instruction> body;
+
+    public FunctionDef(FunctionTable functionTable) {
+        this.name = functionTable.getOrder();
+        if (functionTable.getType().equals("void"))
+            this.return_slots = 0;
+        else
+            this.return_slots = 1;
+        this.param_slots = functionTable.getArgsTable().size();
+        this.loc_slots = functionTable.getLocalTable().size();
+        this.body = functionTable.getBody();
+    }
+
+    public String toString() {
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append(name);
+        stringBuilder.append()
+    }
+
 }
