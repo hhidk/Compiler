@@ -31,10 +31,4 @@ public class FunctionDef {
         this.body = functionTable.getBody();
     }
 
-    public String toString() {
-        StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append(name);
-        stringBuilder.append()
-    }
-
 }
