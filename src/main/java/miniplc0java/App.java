@@ -91,18 +91,8 @@ public class App {
         } else if (result.getBoolean("analyse")) {
             // analyze
             var analyzer = new Analyser(tokenizer);
-            Map<String, Object> map = new HashMap<>();
-            try {
-                map = analyzer.analyse();
-            } catch (Exception e) {
-                // 遇到错误不输出，直接退出
-                System.err.println(e);
-                System.exit(0);
-                return;
-            }
-//            for (Instruction instruction : instructions) {
-//                output.println(instruction.toString());
-//            }
+            Map<String, Object> map = analyzer.analyse();
+            // todo
         } else {
             System.err.println("Please specify either '--analyse' or '--tokenize'.");
             System.exit(3);

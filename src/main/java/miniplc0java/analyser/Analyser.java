@@ -617,31 +617,41 @@ public final class Analyser {
             var nameToken = next();
             String name = (String) nameToken.getValue();
             // call expr
+            // todo: 不知道需不需要判断参数类型吻合
             if (nextIf(TokenType.L_PAREN) != null) {
-                if (functionTables.get(name) == null)
+                if (functionTables.get(name) == null && !isStdlib(name))
                     throw new Error("Illegal function call");
 
-                addInstruction(Operation.stackalloc, 1);
+                if (!isStdlib(name)) {
+                    addInstruction(Operation.stackalloc, 1);
+                }
                 if (nextIf(TokenType.R_PAREN) == null) {
                     analyseCallParamList();
                     expect(TokenType.R_PAREN);
                 }
 
-                addInstruction(Operation.callname, functionTables.get(name).order);
+                if (!isStdlib(name)) {
+                    addInstruction(Operation.callname, functionTables.get(name).order);
+                    type = functionTables.get(name).type;
+                } else {
+                    type = callStdlib(name);
+                }
             }
             // ident expr
-            SymbolEntry symbolEntry = getSymbolEntry(name);
-            if (symbolEntry == null) {
-                throw new Error("Undefined param");
-            } else if (symbolEntry.scope == 0) {
-                addInstruction(Operation.globa, symbolEntry.order);
-            } else if (symbolEntry.scope == 1) {
-                addInstruction(Operation.arga, symbolEntry.order);
-            } else if (symbolEntry.scope == 2) {
-                addInstruction(Operation.loca, symbolEntry.order);
+            else {
+                SymbolEntry symbolEntry = getSymbolEntry(name);
+                if (symbolEntry == null) {
+                    throw new Error("Undefined param");
+                } else if (symbolEntry.scope == 0) {
+                    addInstruction(Operation.globa, symbolEntry.order);
+                } else if (symbolEntry.scope == 1) {
+                    addInstruction(Operation.arga, symbolEntry.order);
+                } else if (symbolEntry.scope == 2) {
+                    addInstruction(Operation.loca, symbolEntry.order);
+                }
+                addInstruction(Operation.load64);
+                type = symbolEntry.type;
             }
-            addInstruction(Operation.load64);
-            type = symbolEntry.type;
         }
         // error
         else {
@@ -699,5 +709,41 @@ public final class Analyser {
         return tt == TokenType.MINUS  || tt == TokenType.IDENT || tt == TokenType.L_PAREN ||
                 tt == TokenType.UINT_LITERAL || tt == TokenType.DOUBLE_LITERAL ||
                 tt == TokenType.STRING_LITERAL || tt == TokenType.CHAR_LITERAL;
+    }
+
+    private boolean isStdlib(String name) {
+        return name.equals("getint") || name.equals("getdouble") || name.equals("getchar") ||
+                name.equals("putint") || name.equals("putdouble") || name.equals("putchar") ||
+                name.equals("putstr") || name.equals("putln");
+    }
+
+    private String callStdlib(String name) {
+        if (name.equals("getint")) {
+            addInstruction(Operation.scani);
+            return "int";
+        } else if (name.equals("getdouble")) {
+            addInstruction(Operation.scanf);
+            return "double";
+        } else if (name.equals("getchar")) {
+            addInstruction(Operation.scanc);
+            return "int";
+        } else if (name.equals("putint")) {
+            addInstruction(Operation.printi);
+            return "void";
+        } else if (name.equals("putdouble")) {
+            addInstruction(Operation.printf);
+            return "void";
+        } else if (name.equals("putchar")) {
+            addInstruction(Operation.printc);
+            return "void";
+        } else if (name.equals("putln")) {
+            addInstruction(Operation.println);
+            return "void";
+        } else if (name.equals("putstr")) {
+            addInstruction(Operation.prints);
+            return "void";
+        } else {
+            return "void";
+        }
     }
 }
