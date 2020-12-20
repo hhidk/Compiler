@@ -2,10 +2,7 @@ package miniplc0java.analyser;
 
 import miniplc0java.instruction.Instruction;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
+import java.util.*;
 
 public class FunctionTable {
     // 函数在全局变量表中的序号

@@ -102,7 +102,7 @@ public class Tokenizer {
             } else if(it.peekChar() == '\\') {
                 it.nextChar();
                 if(isEscapeSequenceChar(it.peekChar())) {
-                    stringBuilder.append(it.nextChar());
+                    stringBuilder.append(switchToEscapeSequenceChar(it.nextChar()));
                 } else {
                     throw new TokenizeError(ErrorCode.InvalidInput, it.previousPos());
                 }
@@ -127,9 +127,9 @@ public class Tokenizer {
             it.nextChar();
             while(isStringRegularChar(it.peekChar()) || it.peekChar() == '\\') {
                 if(it.peekChar() == '\\') {
-                    stringBuilder.append(it.nextChar());
+                    it.nextChar();
                     if(isEscapeSequenceChar(it.peekChar())) {
-                        stringBuilder.append(it.nextChar());
+                        stringBuilder.append(switchToEscapeSequenceChar(it.nextChar()));
                     } else {
                         throw new TokenizeError(ErrorCode.InvalidInput, it.previousPos());
                     }
@@ -222,6 +222,23 @@ public class Tokenizer {
 
     private boolean isEscapeSequenceChar(char c) {
         return (c == '\\') || (c == '"') || (c == '\'') || (c == 'n') || (c == 'r') || (c == 't');
+    }
+
+    private char switchToEscapeSequenceChar(char c) {
+        switch (c) {
+            case '\\':
+            case '"':
+            case '\'':
+                return c;
+            case 'n':
+                return '\n';
+            case 'r':
+                return '\r';
+            case 't':
+                return '\t';
+            default:
+                throw new Error("logic wrong");
+        }
     }
 
     private void skipSpaceCharacters() {

@@ -66,82 +66,6 @@ public final class Analyser {
         return functionTable;
     }
 
-    public SymbolEntry getSymbolEntry(String name) {
-        if (functionTable.argsTable.get(name) != null) {
-            return functionTable.argsTable.get(name);
-        } else if (functionTable.localTable.get(name) != null) {
-            return functionTable.localTable.get(name);
-        } else {
-            return globalTable.get(name);
-        }
-    }
-
-    public void startFunction(String name, Pos curPos) throws AnalyzeError {
-        if (globalTable.get(name) != null) {
-            throw new AnalyzeError(ErrorCode.DuplicateDeclaration, curPos);
-        }
-        int order = globalTable.size();
-        globalTable.put(name, new SymbolEntry(false, true, getNextVariableOffset(), 1, "void", 0, order));
-        this.functionTable = new FunctionTable(order);
-    }
-
-    public void endFunction(String name, String type) {
-        this.functionTable.setType(type);
-        functionTables.put(name, functionTable);
-        this.functionTable = functionTables.get(0);
-    }
-
-    public SymbolEntry addSymbol(String name, boolean isInitialized, boolean isConstant, Pos curPos, String type, boolean isArg) throws AnalyzeError {
-        if (getSymbolEntry(name) != null) {
-            throw new AnalyzeError(ErrorCode.DuplicateDeclaration, curPos);
-        }
-        int order;
-        SymbolEntry symbol;
-        if (this.functionTable.order == 0) {
-            order = globalTable.size();
-            symbol = new SymbolEntry(isConstant, isInitialized, getNextVariableOffset(), 1, type, 0, order);
-            globalTable.put(name, symbol);
-        } else if (isArg) {
-            order = this.functionTable.argsTable.size();
-            symbol = new SymbolEntry(isConstant, isInitialized, getNextVariableOffset(), 1, type, 1, order);
-            this.functionTable.argsTable.put(name, symbol);
-        } else {
-            order = this.functionTable.localTable.size();
-            symbol = new SymbolEntry(isConstant, isInitialized, getNextVariableOffset(), 1, type, 1, order);
-            this.functionTable.localTable.put(name, symbol);
-        }
-        return symbol;
-    }
-
-    public SymbolEntry addString(String value) {
-        int order = globalTable.size();
-        SymbolEntry symbol = new SymbolEntry(true, true, getNextVariableOffset(), 1, "string", 0, order);
-        globalTable.put(value + order, symbol);
-        return symbol;
-    }
-
-    public Instruction addInstruction(Operation opt, Integer x) {
-        Instruction instruction = new Instruction(opt, x);
-        this.functionTable.body.add(instruction);
-        return instruction;
-    }
-
-    public void addInstruction(Operation opt, Long x) {
-        this.functionTable.body.add(new Instruction(opt, x));
-    }
-
-    public void addInstruction(Operation opt, Double x) {
-        this.functionTable.body.add(new Instruction(opt, x));
-    }
-
-    public void addInstruction(Operation opt) {
-        this.functionTable.body.add(new Instruction(opt));
-    }
-
-    public int getInstructionOffset() {
-        return this.functionTable.body.size();
-    }
-
     /**
      * 查看下一个 Token
      *
@@ -222,6 +146,86 @@ public final class Analyser {
      */
     private int getNextVariableOffset() {
         return this.nextOffset++;
+    }
+
+    public SymbolEntry getSymbolEntry(String name) {
+        if (functionTable.argsTable.get(name) != null) {
+            return functionTable.argsTable.get(name);
+        } else if (functionTable.localTable.get(name) != null) {
+            return functionTable.localTable.get(name);
+        } else {
+            return globalTable.get(name);
+        }
+    }
+
+    public void startFunction(String name, Pos curPos) throws AnalyzeError {
+        if (globalTable.get(name) != null) {
+            throw new AnalyzeError(ErrorCode.DuplicateDeclaration, curPos);
+        }
+        int order = globalTable.size();
+        globalTable.put(name, new SymbolEntry(false, true, getNextVariableOffset(), 1, "void", 0, order));
+        this.functionTable = new FunctionTable(order);
+    }
+
+    public void endFunction(String name, String type) {
+        this.functionTable.setType(type);
+        functionTables.put(name, functionTable);
+        this.functionTable = functionTables.get("_start");
+    }
+
+    public SymbolEntry addSymbol(String name, boolean isInitialized, boolean isConstant, Pos curPos, String type, boolean isArg) throws AnalyzeError {
+        if (getSymbolEntry(name) != null) {
+            throw new AnalyzeError(ErrorCode.DuplicateDeclaration, curPos);
+        }
+        int order;
+        SymbolEntry symbol;
+        if (this.functionTable.order == 0) {
+            order = globalTable.size();
+            symbol = new SymbolEntry(isConstant, isInitialized, getNextVariableOffset(), 1, type, 0, order);
+            globalTable.put(name, symbol);
+        } else if (isArg) {
+            order = this.functionTable.argsTable.size();
+            symbol = new SymbolEntry(isConstant, isInitialized, getNextVariableOffset(), 1, type, 1, order);
+            this.functionTable.argsTable.put(name, symbol);
+        } else {
+            order = this.functionTable.localTable.size();
+            symbol = new SymbolEntry(isConstant, isInitialized, getNextVariableOffset(), 1, type, 1, order);
+            this.functionTable.localTable.put(name, symbol);
+        }
+        return symbol;
+    }
+
+    public SymbolEntry addString(String value) {
+        int order = globalTable.size();
+        SymbolEntry symbol = new SymbolEntry(true, true, getNextVariableOffset(), 1, "string", 0, order);
+        globalTable.put(value + order, symbol);
+        return symbol;
+    }
+
+    public Instruction addInstruction(Operation opt, Integer x) {
+        Instruction instruction = new Instruction(opt, x);
+        this.functionTable.body.add(instruction);
+        return instruction;
+    }
+
+    public void addInstruction(Operation opt, Long x) {
+        this.functionTable.body.add(new Instruction(opt, x));
+    }
+
+    public void addInstruction(Operation opt, Double x) {
+        this.functionTable.body.add(new Instruction(opt, x));
+    }
+
+    public void addInstruction(Operation opt) {
+        this.functionTable.body.add(new Instruction(opt));
+    }
+
+    public void popInstruction() {
+        this.functionTable.body.remove(this.functionTable.body.size() - 1);
+    }
+
+    public int getInstructionOffset() {
+        return this.functionTable.body.size();
     }
 
     private void analyseProgram() throws CompileError {
@@ -453,83 +457,198 @@ public final class Analyser {
         // ident_expr -> IDENT
         // group_expr -> '(' expr ')'
 
-        analyseExpr1();
+        // todo: 尚未考虑连续等于的情况
+        String ltype = analyseExpr1();
         if (nextIf(TokenType.ASSIGN) != null) {
-            analyseExpr();
+            popInstruction();
+            String rtype = analyseExpr();
+
+            if (!ltype.equals("int") && !ltype.equals("double"))
+                throw new Error("Illegal assign expr");
+            if (!ltype.equals(rtype))
+                throw new Error("Cannot assign value of different type");
+            addInstruction(Operation.store64);
         }
-        // todo: symbol
-        throw new Error("not implemented");
+        return ltype;
     }
 
-    private void analyseExpr1() throws CompileError {
-        analyseExpr2();
+    private String analyseExpr1() throws CompileError {
+        String ltype = analyseExpr2();
         TokenType tt = peek().getTokenType();
         while (tt == TokenType.GT || tt == TokenType.LT || tt == TokenType.GE
             || tt == TokenType.LE || tt == TokenType.EQ || tt == TokenType.NEQ) {
             var operatorToken = next();
-            analyseExpr2();
+            TokenType opt = operatorToken.getTokenType();
+            String rtype = analyseExpr2();
+
+            if (!ltype.equals(rtype))
+                throw new Error("Cannot compare different type");
+            if (ltype.equals("int")) {
+                addInstruction(Operation.cmpi);
+            } else if (ltype.equals("double")) {
+                addInstruction(Operation.cmpf);
+            } else {
+                throw new Error("Illegal type for comparison");
+            }
+            switch (opt) {
+                case GT:
+                    addInstruction(Operation.setgt);
+                    break;
+                case LT:
+                    addInstruction(Operation.setlt);
+                    break;
+                case GE:
+                    addInstruction(Operation.setlt);
+                    addInstruction(Operation.not);
+                    break;
+                case LE:
+                    addInstruction(Operation.setgt);
+                    addInstruction(Operation.not);
+                    break;
+                case EQ:
+                    addInstruction(Operation.not);
+                    break;
+                case NEQ:
+                default:
+                    break;
+            }
         }
-        // todo: symbol
+        return ltype;
     }
 
-    private void analyseExpr2() throws CompileError {
-        analyseExpr3();
+    private String analyseExpr2() throws CompileError {
+        String ltype = analyseExpr3();
         TokenType tt = peek().getTokenType();
         while (tt == TokenType.PLUS || tt == TokenType.MINUS) {
             var operatorToken = next();
-            analyseExpr3();
+            TokenType opt = operatorToken.getTokenType();
+            String rtype = analyseExpr3();
+
+            if (!ltype.equals(rtype))
+                throw new Error("Illegal operation");
+            if (opt == TokenType.PLUS && ltype.equals("int")) {
+                addInstruction(Operation.addi);
+            } else if (opt == TokenType.PLUS && ltype.equals("double")) {
+                addInstruction(Operation.addf);
+            } else if (opt == TokenType.MINUS && ltype.equals("int")) {
+                addInstruction(Operation.subi);
+            } else if (opt == TokenType.MINUS && ltype.equals("double")) {
+                addInstruction(Operation.subf);
+            } else {
+                throw new Error("Illegal operation");
+            }
         }
-        // todo: symbol
+        return ltype;
     }
 
-    private void analyseExpr3() throws CompileError {
-        analyseExpr4();
+    private String analyseExpr3() throws CompileError {
+        String ltype = analyseExpr4();
         TokenType tt = peek().getTokenType();
         while (tt == TokenType.MUL || tt == TokenType.DIV) {
             var operatorToken = next();
-            analyseExpr4();
+            TokenType opt = operatorToken.getTokenType();
+            String rtype = analyseExpr4();
+
+            if (!ltype.equals(rtype))
+                throw new Error("Illegal operation");
+            if (opt == TokenType.MUL && ltype.equals("int")) {
+                addInstruction(Operation.muli);
+            } else if (opt == TokenType.MUL && ltype.equals("double")) {
+                addInstruction(Operation.mulf);
+            } else if (opt == TokenType.DIV && ltype.equals("int")) {
+                addInstruction(Operation.divi);
+            } else if (opt == TokenType.DIV && ltype.equals("double")) {
+                addInstruction(Operation.divf);
+            } else {
+                throw new Error("Illegal operation");
+            }
         }
-        // todo: symbol
+        return ltype;
     }
 
-    private void analyseExpr4() throws CompileError {
-        analyseExpr5();
+    private String analyseExpr4() throws CompileError {
+        String type = analyseExpr5();
         while (nextIf(TokenType.AS_KW) != null) {
-            String type = analyseType();
+            String newType = analyseType();
+            if (newType.equals("void")) {
+                throw new Error("Illegal type transition");
+            } else if (type.equals("int") && newType.equals("double")) {
+                addInstruction(Operation.itof);
+            } else if (type.equals("double") && newType.equals("int")) {
+                addInstruction(Operation.ftoi);
+            }
+            type = newType;
         }
-        // todo: symbol
+        return type;
     }
 
-    private void analyseExpr5() throws CompileError {
-        TokenType tt = peek().getTokenType();
+    private String analyseExpr5() throws CompileError {
         boolean isNeg = false;
         while (nextIf(TokenType.MINUS) != null) {
             isNeg = true;
         }
-        analyseExpr6();
-        // todo: symbol
+        String type = analyseExpr6();
+        if (isNeg) {
+            if (type == "int") {
+                addInstruction(Operation.negi);
+            } else if (type == "double") {
+                addInstruction(Operation.negf);
+            } else {
+                throw new Error("Illegal negate");
+            }
+        }
+        return type;
     }
 
-    private void analyseExpr6() throws CompileError {
+    private String analyseExpr6() throws CompileError {
         TokenType tt = peek().getTokenType();
-        String type;
+        String type = null;
+        // group expr
         if (nextIf(TokenType.L_PAREN) != null) {
-            analyseExpr();
+            type = analyseExpr();
             expect(TokenType.R_PAREN);
-        } else if (tt == TokenType.UINT_LITERAL || tt == TokenType.CHAR_LITERAL || tt == TokenType.STRING_LITERAL) {
+        }
+        // literal expr
+        else if (tt == TokenType.UINT_LITERAL || tt == TokenType.CHAR_LITERAL || tt == TokenType.STRING_LITERAL) {
             type = analyseLiteral();
-        } else if (tt == TokenType.IDENT) {
-            var nameToken = next();// todo
+        }
+        // call & ident expr
+        else if (tt == TokenType.IDENT) {
+            var nameToken = next();
+            String name = (String) nameToken.getValue();
+            // call expr
             if (nextIf(TokenType.L_PAREN) != null) {
+                if (functionTables.get(name) == null)
+                    throw new Error("Illegal function call");
+
+                addInstruction(Operation.stackalloc, 1);
                 if (nextIf(TokenType.R_PAREN) == null) {
                     analyseCallParamList();
                     expect(TokenType.R_PAREN);
                 }
+
+                addInstruction(Operation.callname, functionTables.get(name).order);
             }
-        } else {
+            // ident expr
+            SymbolEntry symbolEntry = getSymbolEntry(name);
+            if (symbolEntry == null) {
+                throw new Error("Undefined param");
+            } else if (symbolEntry.scope == 0) {
+                addInstruction(Operation.globa, symbolEntry.order);
+            } else if (symbolEntry.scope == 1) {
+                addInstruction(Operation.arga, symbolEntry.order);
+            } else if (symbolEntry.scope == 2) {
+                addInstruction(Operation.loca, symbolEntry.order);
+            }
+            addInstruction(Operation.load64);
+            type = symbolEntry.type;
+        }
+        // error
+        else {
             throw new Error("Illegal Expression");
         }
-        // todo: symbol
+
+        return type;
     }
 
     private String analyseLiteral() throws CompileError {
