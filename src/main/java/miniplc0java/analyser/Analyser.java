@@ -62,7 +62,7 @@ public final class Analyser {
     public FunctionTable init_start() {
         FunctionTable functionTable = new FunctionTable(0);
         functionTables.put("_start",functionTable);
-        globalTable.put("_start", new SymbolEntry(false, true, getNextVariableOffset(), 1, "void", 0, 0, 6));
+        globalTable.put("_start", new SymbolEntry(false, true, getNextVariableOffset(), 1, "void", 0, 0));
         return functionTable;
     }
 
@@ -158,21 +158,6 @@ public final class Analyser {
         }
     }
 
-    public void startFunction(String name, Pos curPos) throws AnalyzeError {
-        if (globalTable.get(name) != null) {
-            throw new AnalyzeError(ErrorCode.DuplicateDeclaration, curPos);
-        }
-        int order = globalTable.size();
-        globalTable.put(name, new SymbolEntry(false, true, getNextVariableOffset(), 1, "string", 0, order, name.length()));
-        this.functionTable = new FunctionTable(order);
-    }
-
-    public void endFunction(String name, String type) {
-        this.functionTable.setType(type);
-        functionTables.put(name, functionTable);
-        this.functionTable = functionTables.get("_start");
-    }
-
     public SymbolEntry addSymbol(String name, boolean isInitialized, boolean isConstant, Pos curPos, String type, boolean isArg) throws AnalyzeError {
         if (getSymbolEntry(name) != null) {
             throw new AnalyzeError(ErrorCode.DuplicateDeclaration, curPos);
@@ -197,8 +182,8 @@ public final class Analyser {
 
     public SymbolEntry addString(String value) {
         int order = globalTable.size();
-        SymbolEntry symbol = new SymbolEntry(true, true, getNextVariableOffset(), 1, "string", 0, order, value.length());
-        globalTable.put(value + order, symbol);
+        SymbolEntry symbol = new SymbolEntry(true, true, getNextVariableOffset(), 1, "string", 0, order);
+        globalTable.put(value, symbol);
         return symbol;
     }
 
@@ -226,6 +211,20 @@ public final class Analyser {
 
     public int getInstructionOffset() {
         return this.functionTable.body.size();
+    }
+
+    public void startFunction(String name, Pos curPos) throws AnalyzeError {
+        if (globalTable.get(name) != null) {
+            throw new AnalyzeError(ErrorCode.DuplicateDeclaration, curPos);
+        }
+        SymbolEntry symbolEntry = addString(name);
+        this.functionTable = new FunctionTable(symbolEntry.order);
+    }
+
+    public void endFunction(String name, String type) {
+        this.functionTable.setType(type);
+        functionTables.put(name, functionTable);
+        this.functionTable = functionTables.get("_start");
     }
 
     private void analyseProgram() throws CompileError {

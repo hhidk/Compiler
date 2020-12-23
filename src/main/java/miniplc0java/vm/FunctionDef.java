@@ -31,4 +31,66 @@ public class FunctionDef {
         this.body = functionTable.getBody();
     }
 
+    public String toString() {
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append(toHexString(name));
+        stringBuilder.append(toHexString(return_slots));
+        stringBuilder.append(toHexString(param_slots));
+        stringBuilder.append(toHexString(loc_slots));
+        for (Instruction instruction : body) {
+
+        }
+
+        return stringBuilder.toString();
+    }
+
+    public String toHexByte(int x) {
+        int i = x % 256;
+        StringBuilder stringBuilder = new StringBuilder();
+        if (i < 16) {
+            stringBuilder.append(0);
+            stringBuilder.append(Integer.toHexString(i));
+        } else if (i < 128) {
+            stringBuilder.append(Integer.toHexString(i));
+        } else {
+            stringBuilder.append(Integer.toHexString(i));
+        }
+        return stringBuilder.toString();
+    }
+
+    public String toHexString(int x) {
+        StringBuilder stringBuilder = new StringBuilder();
+
+        stringBuilder.append(toHexByte(x >> 24));
+        stringBuilder.append(toHexByte(x >> 16));
+        stringBuilder.append(toHexByte(x >> 8));
+        stringBuilder.append(toHexByte(x));
+
+        return stringBuilder.toString();
+    }
+
+    public String toHexString(long x) {
+        StringBuilder stringBuilder = new StringBuilder();
+
+        stringBuilder.append(toHexByte((int) (x >> 56)));
+        stringBuilder.append(toHexByte((int) ((x >> 48) % 256)));
+        stringBuilder.append(toHexByte((int) ((x >> 40) % 256)));
+        stringBuilder.append(toHexByte((int) ((x >> 32) % 256)));
+        stringBuilder.append(toHexByte((int) ((x >> 24) % 256)));
+        stringBuilder.append(toHexByte((int) ((x >> 16) % 256)));
+        stringBuilder.append(toHexByte((int) ((x >> 8) % 256)));
+        stringBuilder.append(toHexByte((int) (x % 256)));
+
+        return stringBuilder.toString();
+    }
+
+    public String toHexString(String str) {
+        StringBuilder stringBuilder = new StringBuilder();
+        for (int i = 0; i < str.length(); i++) {
+            int x = str.charAt(i);
+            stringBuilder.append(toHexByte(x));
+        }
+        return stringBuilder.toString();
+    }
+
 }
