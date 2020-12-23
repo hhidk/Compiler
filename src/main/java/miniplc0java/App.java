@@ -73,38 +73,46 @@ public class App {
         var iter = new StringIter(scanner);
         var tokenizer = tokenize(iter);
 
-        if (result.getBoolean("tokenize")) {
-            // tokenize
-            var tokens = new ArrayList<Token>();
-            try {
-                while (true) {
-                    var token = tokenizer.nextToken();
-                    if (token.getTokenType().equals(TokenType.EOF)) {
-                        break;
-                    }
-                    tokens.add(token);
-                }
-            } catch (Exception e) {
-                // 遇到错误不输出，直接退出
-                System.err.println(e);
-                System.exit(0);
-                return;
-            }
-            for (Token token : tokens) {
-                output.println(token.toString());
-            }
-        } else if (result.getBoolean("analyse")) {
-            // analyze
-            var analyzer = new Analyser(tokenizer);
-            Map<String, Object> map = analyzer.analyse();
-            HashMap<String, SymbolEntry> globalTable = (HashMap<String, SymbolEntry>) map.get("globalTable");
-            HashMap<String, FunctionTable> functionTables = (HashMap<String, FunctionTable>) map.get("functionTables");
-            o0 o00 = new o0(globalTable, functionTables);
-            // printO0(o00, output);
-        } else {
-            System.err.println("Please specify either '--analyse' or '--tokenize'.");
-            System.exit(3);
-        }
+        var analyzer = new Analyser(tokenizer);
+        Map<String, Object> map = analyzer.analyse();
+        HashMap<String, SymbolEntry> globalTable = (HashMap<String, SymbolEntry>) map.get("globalTable");
+        HashMap<String, FunctionTable> functionTables = (HashMap<String, FunctionTable>) map.get("functionTables");
+        o0 o00 = new o0(globalTable, functionTables);
+
+        output.print(o00.toString());
+
+//        if (result.getBoolean("tokenize")) {
+//            // tokenize
+//            var tokens = new ArrayList<Token>();
+//            try {
+//                while (true) {
+//                    var token = tokenizer.nextToken();
+//                    if (token.getTokenType().equals(TokenType.EOF)) {
+//                        break;
+//                    }
+//                    tokens.add(token);
+//                }
+//            } catch (Exception e) {
+//                // 遇到错误不输出，直接退出
+//                System.err.println(e);
+//                System.exit(0);
+//                return;
+//            }
+//            for (Token token : tokens) {
+//                output.println(token.toString());
+//            }
+//        } else if (result.getBoolean("analyse")) {
+//            // analyze
+//            var analyzer = new Analyser(tokenizer);
+//            Map<String, Object> map = analyzer.analyse();
+//            HashMap<String, SymbolEntry> globalTable = (HashMap<String, SymbolEntry>) map.get("globalTable");
+//            HashMap<String, FunctionTable> functionTables = (HashMap<String, FunctionTable>) map.get("functionTables");
+//            o0 o00 = new o0(globalTable, functionTables);
+//            // printO0(o00, output);
+//        } else {
+//            System.err.println("Please specify either '--analyse' or '--tokenize'.");
+//            System.exit(3);
+//        }
     }
 
     private static ArgumentParser buildArgparse() {
