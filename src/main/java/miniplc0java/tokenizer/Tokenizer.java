@@ -153,16 +153,23 @@ public class Tokenizer {
         Pos startPos = it.currentPos();
         switch (peek) {
             case '+':
+                return new Token(TokenType.PLUS, peek, it.previousPos(), it.currentPos());
             case '*':
+                return new Token(TokenType.MINUS, peek, it.previousPos(), it.currentPos());
             case ';':
+                return new Token(TokenType.SEMICOLON, peek, it.previousPos(), it.currentPos());
             case '(':
+                return new Token(TokenType.L_PAREN, peek, it.previousPos(), it.currentPos());
             case ')':
+                return new Token(TokenType.R_PAREN, peek, it.previousPos(), it.currentPos());
             case '{':
+                return new Token(TokenType.L_BRACE, peek, it.previousPos(), it.currentPos());
             case '}':
+                return new Token(TokenType.R_BRACE, peek, it.previousPos(), it.currentPos());
             case ',':
+                return new Token(TokenType.COMMA, peek, it.previousPos(), it.currentPos());
             case ':':
-                TokenType tokenType = TokenType.getTokenType(peek);
-                return new Token(tokenType, peek, it.previousPos(), it.currentPos());
+                return new Token(TokenType.COLON, peek, it.previousPos(), it.currentPos());
             case '-':
                 if(it.peekChar() == '>'){
                     it.nextChar();
