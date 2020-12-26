@@ -11,20 +11,20 @@ import java.util.Map;
 public class o0 {
     int magic;
     int version;
-    byte globals_count;
+    int globals_count;
     List<GlobalDef> globals = new ArrayList<>();
-    byte functions_count;
+    int functions_count;
     List<FunctionDef> functions = new ArrayList<>();
 
     public o0(HashMap<String, SymbolEntry> globalTable, HashMap<String, FunctionTable> functionTables) {
         this.magic = 0x72303b3e;
         this.version = 0x00000001;
-        this.globals_count = (byte) globalTable.size();
+        this.globals_count = globalTable.size();
         for (Map.Entry<String, SymbolEntry> entry : globalTable.entrySet()) {
             GlobalDef globalDef = new GlobalDef(entry.getKey(), entry.getValue());
             this.globals.add(globalDef);
         }
-        this.functions_count = (byte) functionTables.size();
+        this.functions_count = functionTables.size();
         for (Map.Entry<String, FunctionTable> entry : functionTables.entrySet()) {
             FunctionDef functionDef = new FunctionDef(entry.getValue());
             this.functions.add(functionDef);
@@ -84,7 +84,7 @@ public class o0 {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append(toHexString(magic));
         stringBuilder.append(toHexString(version));
-        stringBuilder.append(toHexByte(globals_count));
+        stringBuilder.append(toHexString(globals_count));
         for (GlobalDef globalDef : globals) {
             stringBuilder.append(globalDef.toString());
         }
@@ -92,7 +92,7 @@ public class o0 {
         for (FunctionDef functionDef : functions) {
             stringBuilder.append(functionDef.toString());
         }
-        return null;
+        return stringBuilder.toString();
     }
 
 }

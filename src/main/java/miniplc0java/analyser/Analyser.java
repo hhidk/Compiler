@@ -64,6 +64,7 @@ public final class Analyser {
         functionTables.put("_start",functionTable);
         globalTable.put("_start", new SymbolEntry(false, true, getNextVariableOffset(), 1, "void", 0, 0));
         return functionTable;
+        // todo: 调用main
     }
 
     /**
@@ -232,6 +233,7 @@ public final class Analyser {
         // item -> function | decl_stmt
         // decl_stmt -> let_decl_stmt | const_decl_stmt
 
+        System.out.println("analyseProgram()");
         while(true) {
             var peeked = peek();
             if (peeked.getTokenType() == TokenType.FN_KW) {
@@ -253,6 +255,7 @@ public final class Analyser {
     private void analyseFunction() throws CompileError {
         // function -> 'fn' IDENT '(' function_param_list? ')' '->' ty block_stmt
 
+        System.out.println("analyseFunction()");
         expect(TokenType.FN_KW);
         var nameToken = expect(TokenType.IDENT);
 
@@ -329,6 +332,7 @@ public final class Analyser {
     private void analyseLetDeclStmt() throws CompileError {
         // let_decl_stmt -> 'let' IDENT ':' ty ('=' expr)? ';'
 
+        System.out.println("analyseLetDeclStmt()");
         expect(TokenType.LET_KW);
         var nameToken = expect(TokenType.IDENT);
         expect(TokenType.COLON);

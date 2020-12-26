@@ -17,6 +17,8 @@ public class FunctionDef {
     int param_slots;
     // 局部变量占据的 slot 数
     int loc_slots;
+    // 函数体长度
+    int body_count;
     // 函数体
     List<Instruction> body;
 
@@ -28,6 +30,7 @@ public class FunctionDef {
             this.return_slots = 1;
         this.param_slots = functionTable.getArgsTable().size();
         this.loc_slots = functionTable.getLocalTable().size();
+        this.body_count = functionTable.getBody().size();
         this.body = functionTable.getBody();
     }
 
@@ -37,8 +40,21 @@ public class FunctionDef {
         stringBuilder.append(toHexString(return_slots));
         stringBuilder.append(toHexString(param_slots));
         stringBuilder.append(toHexString(loc_slots));
+        stringBuilder.append(toHexString(body_count));
         for (Instruction instruction : body) {
-
+            int optnum = instruction.getOpt().getOptnum();
+            stringBuilder.append(toHexByte(optnum));
+            Object x = instruction.getX();
+            if (x == null) {
+                continue;
+            }
+            if (x instanceof Long) {
+                stringBuilder.append(toHexString((long) x));
+            } else if (x instanceof Double) {
+                // todo: 将double转化为二进制形式
+            } else if (x instanceof Integer) {
+                stringBuilder.append(toHexString((int) x));
+            }
         }
 
         return stringBuilder.toString();

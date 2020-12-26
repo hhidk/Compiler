@@ -45,18 +45,18 @@ public class Main {
         var iter = new StringIter(scanner);
         var tokenizer = tokenize(iter);
 
-        Token token;
-        while ((token = tokenizer.nextToken()).getTokenType() != TokenType.EOF) {
-            output.println(token.getTokenType());
-        }
+//        Token token;
+//        while ((token = tokenizer.nextToken()).getTokenType() != TokenType.EOF) {
+//            output.println(token.getTokenType());
+//        }
 
-//        var analyzer = new Analyser(tokenizer);
-//        Map<String, Object> map = analyzer.analyse();
-//        HashMap<String, SymbolEntry> globalTable = (HashMap<String, SymbolEntry>) map.get("globalTable");
-//        HashMap<String, FunctionTable> functionTables = (HashMap<String, FunctionTable>) map.get("functionTables");
-//        o0 o00 = new o0(globalTable, functionTables);
+        var analyzer = new Analyser(tokenizer);
+        Map<String, Object> map = analyzer.analyse();
+        HashMap<String, SymbolEntry> globalTable = (HashMap<String, SymbolEntry>) map.get("globalTable");
+        HashMap<String, FunctionTable> functionTables = (HashMap<String, FunctionTable>) map.get("functionTables");
+        o0 o00 = new o0(globalTable, functionTables);
 
-//        output.print(o00.toString());
+        output.print(o00.toString());
     }
 
     private static Tokenizer tokenize(StringIter iter) {

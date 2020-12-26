@@ -66,4 +66,8 @@ public enum Operation {
     Operation(int optnum) {
         this.optnum = optnum;
     }
+
+    public int getOptnum() {
+        return optnum;
+    }
 }
