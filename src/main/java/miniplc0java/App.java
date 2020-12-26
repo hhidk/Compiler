@@ -80,6 +80,7 @@ public class App {
         o0 o00 = new o0(globalTable, functionTables);
 
         output.print(o00.toString());
+        System.out.println(o00.toString());
 
 //        if (result.getBoolean("tokenize")) {
 //            // tokenize
