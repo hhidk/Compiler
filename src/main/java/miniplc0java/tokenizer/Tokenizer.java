@@ -37,7 +37,11 @@ public class Tokenizer {
         } else if (peek == '"') {
             return lexStringLiteral();
         } else {
-            return lexOperatorOrCommentOrUnknown();
+            Token token = lexOperatorOrCommentOrUnknown();
+            if (token.getTokenType() == TokenType.COMMENT) {
+                return nextToken();
+            }
+            return token;
         }
     }
 
@@ -203,14 +207,7 @@ public class Tokenizer {
             case '/':
                 if(it.peekChar() == '/'){
                     it.nextChar();
-                    while(true) {
-                        if(it.nextChar() == '\\') {
-                            if(it.peekChar() == 'n') {
-                                it.nextChar();
-                                break;
-                            }
-                        }
-                    }
+                    while(it.nextChar() != '\n') ;
                     return new Token(TokenType.COMMENT, null, startPos, it.currentPos());
                 }
                 return new Token(TokenType.DIV, peek, it.previousPos(), it.currentPos());

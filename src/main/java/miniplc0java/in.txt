@@ -1,1 +1,3 @@
-let result: int = 1+2;
+let result: int = 1; //oh
+// hahahha
+let lt: int = 2;

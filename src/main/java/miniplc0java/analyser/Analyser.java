@@ -461,6 +461,8 @@ public final class Analyser {
         // group_expr -> '(' expr ')'
 
         // todo: 尚未考虑连续等于的情况
+
+        System.out.println("expr");
         String ltype = analyseExpr1();
         if (nextIf(TokenType.ASSIGN) != null) {
             popInstruction();
@@ -476,6 +478,7 @@ public final class Analyser {
     }
 
     private String analyseExpr1() throws CompileError {
+        System.out.println("expr1");
         String ltype = analyseExpr2();
         TokenType tt = peek().getTokenType();
         while (tt == TokenType.GT || tt == TokenType.LT || tt == TokenType.GE
@@ -520,6 +523,7 @@ public final class Analyser {
     }
 
     private String analyseExpr2() throws CompileError {
+        System.out.println("expr2");
         String ltype = analyseExpr3();
         TokenType tt = peek().getTokenType();
         while (tt == TokenType.PLUS || tt == TokenType.MINUS) {
@@ -545,6 +549,7 @@ public final class Analyser {
     }
 
     private String analyseExpr3() throws CompileError {
+        System.out.println("expr3");
         String ltype = analyseExpr4();
         TokenType tt = peek().getTokenType();
         while (tt == TokenType.MUL || tt == TokenType.DIV) {
@@ -570,6 +575,7 @@ public final class Analyser {
     }
 
     private String analyseExpr4() throws CompileError {
+        System.out.println("expr4");
         String type = analyseExpr5();
         while (nextIf(TokenType.AS_KW) != null) {
             String newType = analyseType();
@@ -586,6 +592,7 @@ public final class Analyser {
     }
 
     private String analyseExpr5() throws CompileError {
+        System.out.println("expr5");
         boolean isNeg = false;
         while (nextIf(TokenType.MINUS) != null) {
             isNeg = true;
@@ -604,6 +611,7 @@ public final class Analyser {
     }
 
     private String analyseExpr6() throws CompileError {
+        System.out.println("expr6");
         TokenType tt = peek().getTokenType();
         String type = null;
         // group expr
