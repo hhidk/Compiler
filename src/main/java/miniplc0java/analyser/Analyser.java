@@ -53,6 +53,8 @@ public final class Analyser {
 
     public Map<String, Object> analyse() throws CompileError {
         analyseProgram();
+        int order = functionTables.get("main").order;
+        addInstruction(Operation.call, order);
         Map<String, Object> map = new HashMap<>();
         map.put("globalTable", globalTable);
         map.put("functionTables", functionTables);
@@ -64,7 +66,6 @@ public final class Analyser {
         functionTables.put("_start",functionTable);
         globalTable.put("_start", new SymbolEntry(false, true, getNextVariableOffset(), 1, Type.void_ty, 0, 0));
         return functionTable;
-        // todo: 调用main
     }
 
     /**

@@ -79,7 +79,7 @@ public class App {
         HashMap<String, FunctionTable> functionTables = (HashMap<String, FunctionTable>) map.get("functionTables");
         o0 o00 = new o0(globalTable, functionTables);
 
-        output.print(o00.toString());
+        output.print(o00.toVmCode());
 
 //        if (result.getBoolean("tokenize")) {
 //            // tokenize

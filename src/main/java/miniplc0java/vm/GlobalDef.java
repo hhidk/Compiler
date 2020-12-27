@@ -21,7 +21,17 @@ public class GlobalDef {
         }
     }
 
+    @Override
     public String toString() {
+        return "GlobalDef{" +
+                "is_count=" + is_count +
+                ", value_count=" + value_count +
+                ", value='" + value + '\'' +
+                ", type=" + type +
+                '}';
+    }
+
+    public String toVmCode() {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append(toHexByte(is_count));
         stringBuilder.append(toHexString(value_count));

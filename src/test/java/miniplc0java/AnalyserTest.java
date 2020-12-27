@@ -61,7 +61,8 @@ public class AnalyserTest {
             HashMap<String, FunctionTable> functionTables = (HashMap<String, FunctionTable>) map.get("functionTables");
             o0 o00 = new o0(globalTable, functionTables);
 
-            output.print(o00.toString());
+            System.out.println(o00.toString());
+            output.print(o00.toVmCode());
         } catch (Exception e) {
             e.printStackTrace();
             return;

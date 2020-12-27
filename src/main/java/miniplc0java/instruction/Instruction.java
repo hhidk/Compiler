@@ -56,4 +56,12 @@ public class Instruction {
     public void setX(Object x) {
         this.x = x;
     }
+
+    @Override
+    public String toString() {
+        return "Instruction{" +
+                "opt=" + opt +
+                ", x=" + x +
+                '}';
+    }
 }

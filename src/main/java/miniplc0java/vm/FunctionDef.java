@@ -34,7 +34,25 @@ public class FunctionDef {
         this.body = functionTable.getBody();
     }
 
+    @Override
     public String toString() {
+        StringBuilder stringBuilder = new StringBuilder();
+        for (Instruction instruction : body) {
+            stringBuilder.append(instruction);
+            stringBuilder.append(' ');
+        }
+
+        return "FunctionDef{" +
+                "name=" + name +
+                ", return_slots=" + return_slots +
+                ", param_slots=" + param_slots +
+                ", loc_slots=" + loc_slots +
+                ", body_count=" + body_count +
+                ", body=[" + stringBuilder.toString() + ']' +
+                '}';
+    }
+
+    public String toVmCode() {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append(toHexString(name));
         stringBuilder.append(toHexString(return_slots));

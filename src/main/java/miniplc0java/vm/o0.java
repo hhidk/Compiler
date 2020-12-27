@@ -31,6 +31,42 @@ public class o0 {
         }
     }
 
+    @Override
+    public String toString() {
+        StringBuilder stringBuilder = new StringBuilder();
+        for (GlobalDef globalDef : globals) {
+            stringBuilder.append(globalDef.toString());
+            stringBuilder.append('\n');
+        }
+        for (FunctionDef functionDef : functions) {
+            stringBuilder.append(functionDef.toString());
+            stringBuilder.append('\n');
+        }
+
+        return "o0{" +
+                "magic=" + magic +
+                ", version=" + version +
+                ", globals_count=" + globals_count +
+                ", functions_count=" + functions_count + '\n' +
+                stringBuilder.toString() +
+                '}';
+    }
+
+    public String toVmCode() {
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append(toHexString(magic));
+        stringBuilder.append(toHexString(version));
+        stringBuilder.append(toHexString(globals_count));
+        for (GlobalDef globalDef : globals) {
+            stringBuilder.append(globalDef.toVmCode());
+        }
+        stringBuilder.append(toHexString(functions_count));
+        for (FunctionDef functionDef : functions) {
+            stringBuilder.append(functionDef.toVmCode());
+        }
+        return stringBuilder.toString();
+    }
+
     public String toHexByte(int x) {
         int i = x % 256;
         StringBuilder stringBuilder = new StringBuilder();
@@ -76,21 +112,6 @@ public class o0 {
         for (int i = 0; i < str.length(); i++) {
             int x = str.charAt(i);
             stringBuilder.append(toHexByte(x));
-        }
-        return stringBuilder.toString();
-    }
-
-    public String toString() {
-        StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append(toHexString(magic));
-        stringBuilder.append(toHexString(version));
-        stringBuilder.append(toHexString(globals_count));
-        for (GlobalDef globalDef : globals) {
-            stringBuilder.append(globalDef.toString());
-        }
-        stringBuilder.append(toHexString(functions_count));
-        for (FunctionDef functionDef : functions) {
-            stringBuilder.append(functionDef.toString());
         }
         return stringBuilder.toString();
     }
