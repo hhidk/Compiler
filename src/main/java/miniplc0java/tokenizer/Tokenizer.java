@@ -28,21 +28,23 @@ public class Tokenizer {
         }
 
         char peek = it.peekChar();
+        Token token = null;
         if (Character.isDigit(peek)) {
-            return lexUIntOrDoubleLiteral();
+            token = lexUIntOrDoubleLiteral();
         } else if (Character.isAlphabetic(peek) || peek == '_') {
-            return lexIdentOrKeyword();
+            token = lexIdentOrKeyword();
         } else if (peek == '\'') {
-            return lexCharLiteral();
+            token = lexCharLiteral();
         } else if (peek == '"') {
-            return lexStringLiteral();
+            token = lexStringLiteral();
         } else {
-            Token token = lexOperatorOrCommentOrUnknown();
+            token = lexOperatorOrCommentOrUnknown();
             if (token.getTokenType() == TokenType.COMMENT) {
-                return nextToken();
+                token = nextToken();
             }
-            return token;
         }
+        System.out.println(token.toString());
+        return token;
     }
 
     private Token lexUIntOrDoubleLiteral() throws TokenizeError {

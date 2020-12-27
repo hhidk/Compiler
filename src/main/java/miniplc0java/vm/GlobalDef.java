@@ -1,18 +1,19 @@
 package miniplc0java.vm;
 
 import miniplc0java.analyser.SymbolEntry;
+import miniplc0java.analyser.Type;
 
 public class GlobalDef {
     byte is_count;
     int value_count;
     String value;
 
-    String type;
+    Type type;
 
     public GlobalDef(String name, SymbolEntry symbolEntry) {
         this.is_count = (byte) symbolEntry.getOrder();
         this.type = symbolEntry.getType();
-        if (symbolEntry.getType().equals("int") || symbolEntry.getType().equals(("double"))) {
+        if (symbolEntry.getType() == Type.int_ty || symbolEntry.getType() == Type.double_ty) {
             this.value_count = 8;
         } else {
             this.value_count = name.length();
@@ -24,7 +25,7 @@ public class GlobalDef {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append(toHexByte(is_count));
         stringBuilder.append(toHexString(value_count));
-        if (type.equals("int") || type.equals("double")) {
+        if (type == Type.int_ty || type == Type.double_ty) {
             stringBuilder.append(toHexString(0));
         } else {
             stringBuilder.append(toHexString(value));

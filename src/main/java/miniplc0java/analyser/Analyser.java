@@ -498,9 +498,8 @@ public final class Analyser {
         System.out.println("expr1");
         SymbolEntry symbolEntry = analyseExpr2();
         Type ltype = symbolEntry.getType();
-        TokenType tt = peek().getTokenType();
-        while (tt == TokenType.GT || tt == TokenType.LT || tt == TokenType.GE
-            || tt == TokenType.LE || tt == TokenType.EQ || tt == TokenType.NEQ) {
+        while (peek().getTokenType() == TokenType.GT || peek().getTokenType() == TokenType.LT || peek().getTokenType() == TokenType.GE
+            || peek().getTokenType() == TokenType.LE || peek().getTokenType() == TokenType.EQ || peek().getTokenType() == TokenType.NEQ) {
             var operatorToken = next();
             TokenType opt = operatorToken.getTokenType();
             SymbolEntry rsymbolEntry = analyseExpr2();
@@ -551,8 +550,7 @@ public final class Analyser {
         System.out.println("expr2");
         SymbolEntry symbolEntry = analyseExpr3();
         Type ltype = symbolEntry.getType();
-        TokenType tt = peek().getTokenType();
-        while (tt == TokenType.PLUS || tt == TokenType.MINUS) {
+        while (peek().getTokenType() == TokenType.PLUS || peek().getTokenType() == TokenType.MINUS) {
             var operatorToken = next();
             TokenType opt = operatorToken.getTokenType();
             SymbolEntry rsymbolEntry = analyseExpr3();
@@ -584,8 +582,7 @@ public final class Analyser {
         System.out.println("expr3");
         SymbolEntry symbolEntry = analyseExpr4();
         Type ltype = symbolEntry.getType();
-        TokenType tt = peek().getTokenType();
-        while (tt == TokenType.MUL || tt == TokenType.DIV) {
+        while (peek().getTokenType() == TokenType.MUL || peek().getTokenType() == TokenType.DIV) {
             var operatorToken = next();
             TokenType opt = operatorToken.getTokenType();
             SymbolEntry rsymbolEntry = analyseExpr4();
