@@ -62,7 +62,7 @@ public final class Analyser {
     public FunctionTable init_start() {
         FunctionTable functionTable = new FunctionTable(0);
         functionTables.put("_start",functionTable);
-        globalTable.put("_start", new SymbolEntry(false, true, getNextVariableOffset(), 1, "void", 0, 0));
+        globalTable.put("_start", new SymbolEntry(false, true, getNextVariableOffset(), 1, Type.void_ty, 0, 0));
         return functionTable;
         // todo: 调用main
     }
@@ -159,21 +159,29 @@ public final class Analyser {
         }
     }
 
-    public SymbolEntry addSymbol(String name, boolean isInitialized, boolean isConstant, Pos curPos, String type, boolean isArg) throws AnalyzeError {
-        if (getSymbolEntry(name) != null) {
-            throw new AnalyzeError(ErrorCode.DuplicateDeclaration, curPos);
-        }
+    public SymbolEntry addSymbol(String name, boolean isInitialized, boolean isConstant, Pos curPos, Type type, boolean isArg) throws AnalyzeError {
         int order;
         SymbolEntry symbol;
+        // 插入全局变量
         if (this.functionTable.order == 0) {
+            if (globalTable.get(name) != null)
+                throw new AnalyzeError(ErrorCode.DuplicateDeclaration, curPos);
             order = globalTable.size();
             symbol = new SymbolEntry(isConstant, isInitialized, getNextVariableOffset(), 1, type, 0, order);
             globalTable.put(name, symbol);
-        } else if (isArg) {
+        }
+        // 插入形参
+        else if (isArg) {
+            if (functionTable.argsTable.get(name) != null)
+                throw new AnalyzeError(ErrorCode.DuplicateDeclaration, curPos);
             order = this.functionTable.argsTable.size();
             symbol = new SymbolEntry(isConstant, isInitialized, getNextVariableOffset(), 1, type, 1, order);
             this.functionTable.argsTable.put(name, symbol);
-        } else {
+        }
+        // 插入局部变量
+        else {
+            if (functionTable.localTable.get(name) != null)
+                throw new AnalyzeError(ErrorCode.DuplicateDeclaration, curPos);
             order = this.functionTable.localTable.size();
             symbol = new SymbolEntry(isConstant, isInitialized, getNextVariableOffset(), 1, type, 1, order);
             this.functionTable.localTable.put(name, symbol);
@@ -183,7 +191,7 @@ public final class Analyser {
 
     public SymbolEntry addString(String value) {
         int order = globalTable.size();
-        SymbolEntry symbol = new SymbolEntry(true, true, getNextVariableOffset(), 1, "string", 0, order);
+        SymbolEntry symbol = new SymbolEntry(true, true, getNextVariableOffset(), 1, Type.string_ty, 0, order);
         globalTable.put(value, symbol);
         return symbol;
     }
@@ -222,7 +230,7 @@ public final class Analyser {
         this.functionTable = new FunctionTable(symbolEntry.order);
     }
 
-    public void endFunction(String name, String type) {
+    public void endFunction(String name, Type type) {
         this.functionTable.setType(type);
         functionTables.put(name, functionTable);
         this.functionTable = functionTables.get("_start");
@@ -269,7 +277,7 @@ public final class Analyser {
         }
         expect(TokenType.R_PAREN);
         expect(TokenType.ARROW);
-        String type = analyseType();
+        Type type = analyseType();
         analyseBlockStmt();
 
         endFunction(name, type);
@@ -293,7 +301,7 @@ public final class Analyser {
         }
         var nameToken = expect(TokenType.IDENT);
         expect(TokenType.COLON);
-        String type = analyseType();
+        Type type = analyseType();
 
         String name = (String) nameToken.getValue();
         addSymbol(name, isInitialized, isConstant, nameToken.getStartPos(), type, isArg);
@@ -336,8 +344,8 @@ public final class Analyser {
         expect(TokenType.LET_KW);
         var nameToken = expect(TokenType.IDENT);
         expect(TokenType.COLON);
-        String type = analyseType();
-        if (type.equals("void"))
+        Type type = analyseType();
+        if (type == Type.void_ty)
             throw new Error("Illegal type");
 
         boolean isConstant = false, isInitialized = false, isArg = false;
@@ -352,15 +360,15 @@ public final class Analyser {
 
         if (peek().getTokenType() == TokenType.ASSIGN) {
             expect(TokenType.ASSIGN);
-            String exprType = analyseExpr();
-            if (!type.equals(exprType))
+            SymbolEntry exprSymbolEntry = analyseExpr();
+            Type exprType = exprSymbolEntry.getType();
+            if (type != exprType)
                 throw new Error("Illegal declaration");
             symbolEntry.setInitialized(true);
             addInstruction(Operation.store64);
         }
+
         expect(TokenType.SEMICOLON);
-
-
     }
 
     private void analyseConstDeclStmt() throws CompileError {
@@ -369,8 +377,8 @@ public final class Analyser {
         expect(TokenType.CONST_KW);
         var nameToken = expect(TokenType.IDENT);
         expect(TokenType.COLON);
-        String type = analyseType();
-        if (type.equals("void"))
+        Type type = analyseType();
+        if (type == Type.void_ty)
             throw new Error("Illegal type");
 
         boolean isConstant = true, isInitialized = true, isArg = false;
@@ -384,11 +392,13 @@ public final class Analyser {
         }
 
         expect(TokenType.ASSIGN);
-        String exprType = analyseExpr();
-        if (!type.equals(exprType))
+        SymbolEntry exprSymbolEntry = analyseExpr();
+        Type exprType = exprSymbolEntry.getType();
+        if (type != exprType)
             throw new Error("Illegal declaration");
-        expect(TokenType.SEMICOLON);
         addInstruction(Operation.store64);
+
+        expect(TokenType.SEMICOLON);
     }
 
     private void analyseIfStmt() throws CompileError {
@@ -439,15 +449,15 @@ public final class Analyser {
         // return_stmt -> 'return' expr? ';'
 
         expect(TokenType.RETURN_KW);
-        String exprType = analyseExpr();
-        if (!this.functionTable.type.equals(exprType))
+        Type exprType = analyseExpr().getType();
+        if (functionTable.type != exprType)
             throw new Error("Illegal return type");
         expect(TokenType.SEMICOLON);
 
         addInstruction(Operation.ret);
     }
 
-    private String analyseExpr() throws CompileError {
+    private SymbolEntry analyseExpr() throws CompileError {
         // expr -> operator_expr | negate_expr | assign_expr | as_expr
         //       | call_expr | literal_expr | ident_expr | group_expr
 
@@ -460,38 +470,50 @@ public final class Analyser {
         // ident_expr -> IDENT
         // group_expr -> '(' expr ')'
 
-        // todo: 尚未考虑连续等于的情况
-
         System.out.println("expr");
-        String ltype = analyseExpr1();
+        SymbolEntry lsymbolEntry = analyseExpr1();
+        Type ltype = lsymbolEntry.getType();
         if (nextIf(TokenType.ASSIGN) != null) {
             popInstruction();
-            String rtype = analyseExpr();
+            SymbolEntry rsymbolEntry = analyseExpr();
+            Type rtype = rsymbolEntry.getType();
 
-            if (!ltype.equals("int") && !ltype.equals("double"))
-                throw new Error("Illegal assign expr");
-            if (!ltype.equals(rtype))
-                throw new Error("Cannot assign value of different type");
+            // todo: 判断赋值合法性
+            if (lsymbolEntry.def == 2) {
+                throw new Error("Invalid assignment");
+            } else if (lsymbolEntry.isConstant) {
+                throw new Error("Assign to constant");
+            } else if (!rsymbolEntry.isInitialized) {
+                throw new Error("Expression not initialized");
+            } else if (ltype != rtype) {
+                throw new Error("Assign to different type");
+            }
+
             addInstruction(Operation.store64);
         }
-        return ltype;
+        return lsymbolEntry;
     }
 
-    private String analyseExpr1() throws CompileError {
+    private SymbolEntry analyseExpr1() throws CompileError {
         System.out.println("expr1");
-        String ltype = analyseExpr2();
+        SymbolEntry symbolEntry = analyseExpr2();
+        Type ltype = symbolEntry.getType();
         TokenType tt = peek().getTokenType();
         while (tt == TokenType.GT || tt == TokenType.LT || tt == TokenType.GE
             || tt == TokenType.LE || tt == TokenType.EQ || tt == TokenType.NEQ) {
             var operatorToken = next();
             TokenType opt = operatorToken.getTokenType();
-            String rtype = analyseExpr2();
+            SymbolEntry rsymbolEntry = analyseExpr2();
+            Type rtype = rsymbolEntry.getType();
 
-            if (!ltype.equals(rtype))
+            if (!symbolEntry.isInitialized || !rsymbolEntry.isInitialized)
+                throw new Error("Expression not initialized");
+            else if (ltype != rtype)
                 throw new Error("Cannot compare different type");
-            if (ltype.equals("int")) {
+
+            if (ltype == Type.int_ty) {
                 addInstruction(Operation.cmpi);
-            } else if (ltype.equals("double")) {
+            } else if (ltype == Type.double_ty) {
                 addInstruction(Operation.cmpf);
             } else {
                 throw new Error("Illegal type for comparison");
@@ -515,142 +537,170 @@ public final class Analyser {
                     addInstruction(Operation.not);
                     break;
                 case NEQ:
-                default:
                     break;
+                default:
+                    throw new Error("Illegal operator");
             }
+            // 比较表达式的值不能继续使用
+            symbolEntry = new SymbolEntry(Type.void_ty);
         }
-        return ltype;
+        return symbolEntry;
     }
 
-    private String analyseExpr2() throws CompileError {
+    private SymbolEntry analyseExpr2() throws CompileError {
         System.out.println("expr2");
-        String ltype = analyseExpr3();
+        SymbolEntry symbolEntry = analyseExpr3();
+        Type ltype = symbolEntry.getType();
         TokenType tt = peek().getTokenType();
         while (tt == TokenType.PLUS || tt == TokenType.MINUS) {
             var operatorToken = next();
             TokenType opt = operatorToken.getTokenType();
-            String rtype = analyseExpr3();
+            SymbolEntry rsymbolEntry = analyseExpr3();
+            Type rtype = rsymbolEntry.getType();
 
-            if (!ltype.equals(rtype))
-                throw new Error("Illegal operation");
-            if (opt == TokenType.PLUS && ltype.equals("int")) {
+            if (!symbolEntry.isInitialized || !rsymbolEntry.isInitialized)
+                throw new Error("Expression not initialized");
+            else if (ltype != rtype)
+                throw new Error("Cannot compare different type");
+
+            if (opt == TokenType.PLUS && ltype == Type.int_ty) {
                 addInstruction(Operation.addi);
-            } else if (opt == TokenType.PLUS && ltype.equals("double")) {
+            } else if (opt == TokenType.PLUS && ltype == Type.double_ty) {
                 addInstruction(Operation.addf);
-            } else if (opt == TokenType.MINUS && ltype.equals("int")) {
+            } else if (opt == TokenType.MINUS && ltype == Type.int_ty) {
                 addInstruction(Operation.subi);
-            } else if (opt == TokenType.MINUS && ltype.equals("double")) {
+            } else if (opt == TokenType.MINUS && ltype == Type.double_ty) {
                 addInstruction(Operation.subf);
             } else {
                 throw new Error("Illegal operation");
             }
+            // 表达式变为临时变量
+            symbolEntry = new SymbolEntry(ltype);
         }
-        return ltype;
+        return symbolEntry;
     }
 
-    private String analyseExpr3() throws CompileError {
+    private SymbolEntry analyseExpr3() throws CompileError {
         System.out.println("expr3");
-        String ltype = analyseExpr4();
+        SymbolEntry symbolEntry = analyseExpr4();
+        Type ltype = symbolEntry.getType();
         TokenType tt = peek().getTokenType();
         while (tt == TokenType.MUL || tt == TokenType.DIV) {
             var operatorToken = next();
             TokenType opt = operatorToken.getTokenType();
-            String rtype = analyseExpr4();
+            SymbolEntry rsymbolEntry = analyseExpr4();
+            Type rtype = rsymbolEntry.getType();
 
-            if (!ltype.equals(rtype))
-                throw new Error("Illegal operation");
-            if (opt == TokenType.MUL && ltype.equals("int")) {
+            if (!symbolEntry.isInitialized || !rsymbolEntry.isInitialized)
+                throw new Error("Expression not initialized");
+            else if (ltype != rtype)
+                throw new Error("Cannot compare different type");
+
+            if (opt == TokenType.MUL && ltype == Type.int_ty) {
                 addInstruction(Operation.muli);
-            } else if (opt == TokenType.MUL && ltype.equals("double")) {
+            } else if (opt == TokenType.MUL && ltype == Type.double_ty) {
                 addInstruction(Operation.mulf);
-            } else if (opt == TokenType.DIV && ltype.equals("int")) {
+            } else if (opt == TokenType.DIV && ltype == Type.int_ty) {
                 addInstruction(Operation.divi);
-            } else if (opt == TokenType.DIV && ltype.equals("double")) {
+            } else if (opt == TokenType.DIV && ltype == Type.double_ty) {
                 addInstruction(Operation.divf);
             } else {
                 throw new Error("Illegal operation");
             }
+            // 表达式变为临时变量
+            symbolEntry = new SymbolEntry(ltype);
         }
-        return ltype;
+        return symbolEntry;
     }
 
-    private String analyseExpr4() throws CompileError {
+    private SymbolEntry analyseExpr4() throws CompileError {
         System.out.println("expr4");
-        String type = analyseExpr5();
+        SymbolEntry symbolEntry = analyseExpr5();
+        Type type = symbolEntry.getType();
         while (nextIf(TokenType.AS_KW) != null) {
-            String newType = analyseType();
-            if (newType.equals("void")) {
+            Type newType = analyseType();
+
+            if (!symbolEntry.isInitialized)
+                throw new Error("Expression not initialized");
+
+            if (newType == Type.void_ty) {
                 throw new Error("Illegal type transition");
-            } else if (type.equals("int") && newType.equals("double")) {
+            } else if (type == Type.int_ty && newType == Type.double_ty) {
                 addInstruction(Operation.itof);
-            } else if (type.equals("double") && newType.equals("int")) {
+            } else if (type == Type.double_ty && newType == Type.int_ty) {
                 addInstruction(Operation.ftoi);
             }
-            type = newType;
+            symbolEntry.setType(type);
         }
-        return type;
+        return symbolEntry;
     }
 
-    private String analyseExpr5() throws CompileError {
+    private SymbolEntry analyseExpr5() throws CompileError {
         System.out.println("expr5");
         boolean isNeg = false;
         while (nextIf(TokenType.MINUS) != null) {
             isNeg = true;
         }
-        String type = analyseExpr6();
+        SymbolEntry symbolEntry = analyseExpr6();
+        Type type = symbolEntry.getType();
         if (isNeg) {
-            if (type == "int") {
+            if (!symbolEntry.isInitialized)
+                throw new Error("Expression not initialized");
+            if (type == Type.int_ty) {
                 addInstruction(Operation.negi);
-            } else if (type == "double") {
+            } else if (type == Type.double_ty) {
                 addInstruction(Operation.negf);
             } else {
-                throw new Error("Illegal negate");
+                throw new Error("Illegal expr");
             }
         }
-        return type;
+        return symbolEntry;
     }
 
-    private String analyseExpr6() throws CompileError {
+    private SymbolEntry analyseExpr6() throws CompileError {
         System.out.println("expr6");
         TokenType tt = peek().getTokenType();
-        String type = null;
+        SymbolEntry symbolEntry = null;
         // group expr
         if (nextIf(TokenType.L_PAREN) != null) {
-            type = analyseExpr();
+            symbolEntry = analyseExpr();
             expect(TokenType.R_PAREN);
         }
         // literal expr
         else if (tt == TokenType.UINT_LITERAL || tt == TokenType.CHAR_LITERAL || tt == TokenType.STRING_LITERAL) {
-            type = analyseLiteral();
+            symbolEntry = analyseLiteral();
         }
         // call & ident expr
         else if (tt == TokenType.IDENT) {
             var nameToken = next();
             String name = (String) nameToken.getValue();
             // call expr
-            // todo: 不知道需不需要判断参数类型吻合
             if (nextIf(TokenType.L_PAREN) != null) {
                 if (functionTables.get(name) == null && !isStdlib(name))
                     throw new Error("Illegal function call");
-
-                if (!isStdlib(name)) {
+                // call function
+                else if (!isStdlib(name)) {
                     addInstruction(Operation.stackalloc, 1);
+                    if (nextIf(TokenType.R_PAREN) == null) {
+                        analyseCallParamList();
+                        expect(TokenType.R_PAREN);
+                    }
+                    addInstruction(Operation.call, functionTables.get(name).order);
+                    symbolEntry = new SymbolEntry(functionTables.get(name).type);
                 }
-                if (nextIf(TokenType.R_PAREN) == null) {
-                    analyseCallParamList();
-                    expect(TokenType.R_PAREN);
-                }
-
-                if (!isStdlib(name)) {
-                    addInstruction(Operation.callname, functionTables.get(name).order);
-                    type = functionTables.get(name).type;
-                } else {
-                    type = callStdlib(name);
+                // call stdlib
+                else {
+                    if (nextIf(TokenType.R_PAREN) == null) {
+                        analyseCallParamList();
+                        expect(TokenType.R_PAREN);
+                    }
+                    Type type = callStdlib(name);
+                    symbolEntry = new SymbolEntry(type);
                 }
             }
             // ident expr
             else {
-                SymbolEntry symbolEntry = getSymbolEntry(name);
+                symbolEntry = getSymbolEntry(name);
                 if (symbolEntry == null) {
                     throw new Error("Undefined param");
                 } else if (symbolEntry.scope == 0) {
@@ -661,7 +711,6 @@ public final class Analyser {
                     addInstruction(Operation.loca, symbolEntry.order);
                 }
                 addInstruction(Operation.load64);
-                type = symbolEntry.type;
             }
         }
         // error
@@ -669,50 +718,60 @@ public final class Analyser {
             throw new Error("Illegal Expression");
         }
 
-        return type;
+        return symbolEntry;
     }
 
-    private String analyseLiteral() throws CompileError {
+    private SymbolEntry analyseLiteral() throws CompileError {
         var nameToken = next();
         TokenType tt = nameToken.getTokenType();
         switch (tt) {
             case UINT_LITERAL:
             case CHAR_LITERAL:
                 addInstruction(Operation.push, (Long) nameToken.getValue());
-                return "int";
+                return new SymbolEntry(Type.int_ty);
             case STRING_LITERAL:
                 SymbolEntry symbol = addString((String) nameToken.getValue());
                 int order = symbol.order;
                 addInstruction(Operation.push, order);
-                return "string";
+                return new SymbolEntry(Type.string_ty);
             case DOUBLE_LITERAL:
                 addInstruction(Operation.push, (Double) nameToken.getValue());
-                return "double";
+                return new SymbolEntry(Type.double_ty);
             default:
-                return null;
+                throw new Error("Illegal literal");
         }
     }
 
     private void analyseCallParamList() throws CompileError {
         // call_param_list -> expr (',' expr)*
-
-        analyseExpr();
+        // todo: 判断调用参数和函数定义参数类型相符
+        analyseCallParam();
         while (nextIf(TokenType.COMMA) != null) {
-            analyseExpr();
+            analyseCallParam();
         }
     }
 
-    private String analyseType() throws CompileError {
+    private void analyseCallParam() throws CompileError {
+        SymbolEntry symbolEntry = analyseExpr();
+        if (!symbolEntry.isInitialized) {
+            throw new Error("Expr not initialized");
+        }
+    }
+
+    private Type analyseType() throws CompileError {
         // ty -> IDENT
         // IDENT:void/int(/double)
 
         Token token = expect(TokenType.IDENT);
         String value = (String) token.getValue();
-        if (value.equals("void") || value.equals("int") || value.equals("double")) {
-            return value;
-        } else {
+        if (value.equals("void"))
+            return Type.void_ty;
+        else if (value.equals("int"))
+            return Type.int_ty;
+        else if (value.equals("double"))
+            return Type.double_ty;
+        else
             throw new Error("Type illegal");
-        }
     }
 
     private boolean isExpr() throws CompileError {
@@ -728,33 +787,33 @@ public final class Analyser {
                 name.equals("putstr") || name.equals("putln");
     }
 
-    private String callStdlib(String name) {
+    private Type callStdlib(String name) {
         if (name.equals("getint")) {
             addInstruction(Operation.scani);
-            return "int";
+            return Type.int_ty;
         } else if (name.equals("getdouble")) {
             addInstruction(Operation.scanf);
-            return "double";
+            return Type.double_ty;
         } else if (name.equals("getchar")) {
             addInstruction(Operation.scanc);
-            return "int";
+            return Type.int_ty;
         } else if (name.equals("putint")) {
             addInstruction(Operation.printi);
-            return "void";
+            return Type.void_ty;
         } else if (name.equals("putdouble")) {
             addInstruction(Operation.printf);
-            return "void";
+            return Type.void_ty;
         } else if (name.equals("putchar")) {
             addInstruction(Operation.printc);
-            return "void";
+            return Type.void_ty;
         } else if (name.equals("putln")) {
             addInstruction(Operation.println);
-            return "void";
+            return Type.void_ty;
         } else if (name.equals("putstr")) {
             addInstruction(Operation.prints);
-            return "void";
+            return Type.void_ty;
         } else {
-            return "void";
+            return Type.void_ty;
         }
     }
 }

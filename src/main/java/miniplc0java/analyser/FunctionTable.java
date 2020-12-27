@@ -8,7 +8,7 @@ public class FunctionTable {
     // 函数在全局变量表中的序号
     int order;
     // 返回值类型
-    String type;
+    Type type;
     // 函数体
     List<Instruction> body;
     // 参数表
@@ -18,13 +18,13 @@ public class FunctionTable {
 
     public FunctionTable(int order) {
         this.order = order;
-        this.type = "void";
+        this.type = Type.void_ty;
         this.body = new ArrayList<>();
         this.argsTable = new LinkedHashMap<>();
         this.localTable = new LinkedHashMap<>();
     }
 
-    public void setType(String type) {
+    public void setType(Type type) {
         this.type = type;
     }
 
@@ -32,7 +32,7 @@ public class FunctionTable {
         return order;
     }
 
-    public String getType() {
+    public Type getType() {
         return type;
     }
 
