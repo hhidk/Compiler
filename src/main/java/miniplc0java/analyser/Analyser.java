@@ -228,11 +228,10 @@ public final class Analyser {
         }
         SymbolEntry symbolEntry = addString(name);
         this.functionTable = new FunctionTable(symbolEntry.order);
+        functionTables.put(name, functionTable);
     }
 
-    public void endFunction(String name, Type type) {
-        this.functionTable.setType(type);
-        functionTables.put(name, functionTable);
+    public void endFunction() {
         this.functionTable = functionTables.get("_start");
     }
 
@@ -278,9 +277,10 @@ public final class Analyser {
         expect(TokenType.R_PAREN);
         expect(TokenType.ARROW);
         Type type = analyseType();
+        functionTable.setType(type);
         analyseBlockStmt();
 
-        endFunction(name, type);
+        endFunction();
     }
 
     private void analyseFunctionParamList() throws CompileError {
@@ -314,25 +314,29 @@ public final class Analyser {
 
         expect(TokenType.L_BRACE);
         TokenType tokenType = peek().getTokenType();
-        if (tokenType == TokenType.LET_KW) {
-            analyseLetDeclStmt();
-        } else if (tokenType == TokenType.CONST_KW) {
-            analyseConstDeclStmt();
-        } else if (tokenType == TokenType.IF_KW) {
-            analyseIfStmt();
-        } else if (tokenType == TokenType.WHILE_KW) {
-            analyseWhileStmt();
-        } else if (tokenType == TokenType.RETURN_KW) {
-            analyseReturnStmt();
-        } else if (tokenType == TokenType.L_BRACE) {
-            analyseBlockStmt();
-        } else if (tokenType == TokenType.SEMICOLON) {
-            next();
-        } else if (isExpr()){
-            analyseExpr();
-            expect(TokenType.SEMICOLON);
-        } else {
-            throw new Error("Not a statement");
+        while (tokenType == TokenType.LET_KW || tokenType == TokenType.CONST_KW || tokenType == TokenType.IF_KW || tokenType == TokenType.WHILE_KW
+                || tokenType == TokenType.RETURN_KW || tokenType == TokenType.L_BRACE || tokenType == TokenType.SEMICOLON || isExpr()) {
+            if (tokenType == TokenType.LET_KW) {
+                analyseLetDeclStmt();
+            } else if (tokenType == TokenType.CONST_KW) {
+                analyseConstDeclStmt();
+            } else if (tokenType == TokenType.IF_KW) {
+                analyseIfStmt();
+            } else if (tokenType == TokenType.WHILE_KW) {
+                analyseWhileStmt();
+            } else if (tokenType == TokenType.RETURN_KW) {
+                analyseReturnStmt();
+            } else if (tokenType == TokenType.L_BRACE) {
+                analyseBlockStmt();
+            } else if (tokenType == TokenType.SEMICOLON) {
+                next();
+            } else if (isExpr()){
+                analyseExpr();
+                expect(TokenType.SEMICOLON);
+            } else {
+                throw new Error("Not a statement");
+            }
+            tokenType = peek().getTokenType();
         }
         expect(TokenType.R_BRACE);
     }
@@ -490,6 +494,7 @@ public final class Analyser {
             }
 
             addInstruction(Operation.store64);
+            lsymbolEntry.setInitialized(true);
         }
         return lsymbolEntry;
     }
