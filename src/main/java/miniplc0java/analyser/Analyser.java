@@ -453,21 +453,28 @@ public final class Analyser {
     private void analyseReturnStmt() throws CompileError {
         // return_stmt -> 'return' expr? ';'
 
+        SymbolEntry symbolEntry = null;
         expect(TokenType.RETURN_KW);
         if (nextIf(TokenType.SEMICOLON) == null) {
             addInstruction(Operation.arga, 0);
 
-            SymbolEntry symbolEntry = analyseExpr();
+            symbolEntry = analyseExpr();
             Type type = symbolEntry.getType();
             expect(TokenType.SEMICOLON);
 
-            if (!symbolEntry.isInitialized) {
+            if (functionTable.type == Type.void_ty) {
+                throw new Error("Should return void");
+            } else if (!symbolEntry.isInitialized) {
                 throw new Error("Return value not initialized");
             } else if (functionTable.type != type) {
                 throw new Error("Return type not matched");
             }
 
             addInstruction(Operation.store64);
+        }
+
+        if (this.functionTable.type != Type.void_ty && symbolEntry == null){
+            throw new Error("Should not return void");
         }
         addInstruction(Operation.ret);
     }
