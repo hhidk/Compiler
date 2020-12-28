@@ -59,9 +59,9 @@ public class Instruction {
 
     @Override
     public String toString() {
-        return "Instruction{" +
-                "opt=" + opt +
-                ", x=" + x +
+        return "{" +
+                opt +
+                " " + x +
                 '}';
     }
 }

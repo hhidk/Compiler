@@ -175,7 +175,7 @@ public final class Analyser {
         else if (isArg) {
             if (functionTable.argsTable.get(name) != null)
                 throw new AnalyzeError(ErrorCode.DuplicateDeclaration, curPos);
-            order = this.functionTable.argsTable.size();
+            order = this.functionTable.argsTable.size() + 1; // return value is arg 0
             symbol = new SymbolEntry(isConstant, isInitialized, getNextVariableOffset(), 1, type, 1, order);
             this.functionTable.argsTable.put(name, symbol);
         }
@@ -454,11 +454,21 @@ public final class Analyser {
         // return_stmt -> 'return' expr? ';'
 
         expect(TokenType.RETURN_KW);
-        Type exprType = analyseExpr().getType();
-        if (functionTable.type != exprType)
-            throw new Error("Illegal return type");
-        expect(TokenType.SEMICOLON);
+        if (nextIf(TokenType.SEMICOLON) == null) {
+            addInstruction(Operation.arga, 0);
 
+            SymbolEntry symbolEntry = analyseExpr();
+            Type type = symbolEntry.getType();
+            expect(TokenType.SEMICOLON);
+
+            if (!symbolEntry.isInitialized) {
+                throw new Error("Return value not initialized");
+            } else if (functionTable.type != type) {
+                throw new Error("Return type not matched");
+            }
+
+            addInstruction(Operation.store64);
+        }
         addInstruction(Operation.ret);
     }
 
@@ -496,6 +506,7 @@ public final class Analyser {
 
             addInstruction(Operation.store64);
             lsymbolEntry.setInitialized(true);
+            return new SymbolEntry(Type.void_ty);
         }
         return lsymbolEntry;
     }
