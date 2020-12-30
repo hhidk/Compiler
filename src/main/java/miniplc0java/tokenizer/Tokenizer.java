@@ -122,7 +122,7 @@ public class Tokenizer {
             }
         }
         Pos endPos = it.currentPos();
-        char value = stringBuilder.charAt(0);
+        int value = stringBuilder.charAt(0);
         return new Token(TokenType.CHAR_LITERAL, value, startPos, endPos);
     }
 
