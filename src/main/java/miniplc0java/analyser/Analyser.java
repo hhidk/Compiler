@@ -651,7 +651,7 @@ public final class Analyser {
             } else if (type == Type.double_ty && newType == Type.int_ty) {
                 addInstruction(Operation.ftoi);
             }
-            symbolEntry.setType(type);
+            symbolEntry.setType(newType);
         }
         return symbolEntry;
     }
