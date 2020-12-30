@@ -67,7 +67,7 @@ public class FunctionDef {
             if (x instanceof Long) {
                 stringBuilder.append(toHexString((long) x));
             } else if (x instanceof Double) {
-                // todo: 将double转化为二进制形式
+                stringBuilder.append(toHexString((double) x));
             } else if (x instanceof Integer) {
                 stringBuilder.append(toHexString((int) x));
             }
@@ -114,6 +114,11 @@ public class FunctionDef {
         stringBuilder.append(toHexByte((int) (x % 256)));
 
         return stringBuilder.toString();
+    }
+
+    public String toHexString(double x) {
+        long l = Double.doubleToRawLongBits(x);
+        return toHexString(l);
     }
 
     public String toHexString(String str) {
