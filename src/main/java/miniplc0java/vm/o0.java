@@ -2,6 +2,7 @@ package miniplc0java.vm;
 
 import miniplc0java.analyser.FunctionTable;
 import miniplc0java.analyser.SymbolEntry;
+import miniplc0java.analyser.SymbolTable;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -16,11 +17,11 @@ public class o0 {
     int functions_count;
     List<FunctionDef> functions = new ArrayList<>();
 
-    public o0(HashMap<String, SymbolEntry> globalTable, HashMap<String, FunctionTable> functionTables) {
+    public o0(SymbolTable globalTable, HashMap<String, FunctionTable> functionTables) {
         this.magic = 0x72303b3e;
         this.version = 0x00000001;
         this.globals_count = globalTable.size();
-        for (Map.Entry<String, SymbolEntry> entry : globalTable.entrySet()) {
+        for (Map.Entry<String, SymbolEntry> entry : globalTable.getSymbolMap().entrySet()) {
             GlobalDef globalDef = new GlobalDef(entry.getKey(), entry.getValue());
             this.globals.add(globalDef);
         }

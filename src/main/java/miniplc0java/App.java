@@ -10,6 +10,7 @@ import java.util.*;
 import miniplc0java.analyser.Analyser;
 import miniplc0java.analyser.FunctionTable;
 import miniplc0java.analyser.SymbolEntry;
+import miniplc0java.analyser.SymbolTable;
 import miniplc0java.error.CompileError;
 import miniplc0java.instruction.Instruction;
 import miniplc0java.tokenizer.StringIter;
@@ -72,11 +73,11 @@ public class App {
         scanner = new Scanner(input);
         var iter = new StringIter(scanner);
         var tokenizer = tokenize(iter);
+        var globalTable = new SymbolTable();
+        HashMap<String, FunctionTable> functionTables = new LinkedHashMap<>();
 
-        var analyzer = new Analyser(tokenizer);
-        Map<String, Object> map = analyzer.analyse();
-        HashMap<String, SymbolEntry> globalTable = (HashMap<String, SymbolEntry>) map.get("globalTable");
-        HashMap<String, FunctionTable> functionTables = (HashMap<String, FunctionTable>) map.get("functionTables");
+        var analyzer = new Analyser(tokenizer, globalTable, functionTables);
+        analyzer.analyse();
         o0 o00 = new o0(globalTable, functionTables);
 
         System.out.println(o00.toString());

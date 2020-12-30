@@ -11,17 +11,17 @@ public class FunctionTable {
     Type type;
     // 函数体
     List<Instruction> body;
-    // 参数表
-    HashMap<String, SymbolEntry> argsTable;
-    // 局部变量表
-    HashMap<String, SymbolEntry> localTable;
+    // 局部变量个数
+    int locals;
+    // 参数个数
+    int args;
 
     public FunctionTable(int order) {
         this.order = order;
         this.type = Type.void_ty;
         this.body = new ArrayList<>();
-        this.argsTable = new LinkedHashMap<>();
-        this.localTable = new LinkedHashMap<>();
+        this.locals = 0;
+        this.args = 0;
     }
 
     public void setType(Type type) {
@@ -36,15 +36,22 @@ public class FunctionTable {
         return type;
     }
 
+    public int getLocals() {
+        return locals;
+    }
+
+    public int getArgs() {
+        return args;
+    }
+
     public List<Instruction> getBody() {
         return body;
     }
 
-    public HashMap<String, SymbolEntry> getArgsTable() {
-        return argsTable;
-    }
-
-    public HashMap<String, SymbolEntry> getLocalTable() {
-        return localTable;
+    public boolean isGlobal() {
+        if (order == 0)
+            return true;
+        else
+            return false;
     }
 }

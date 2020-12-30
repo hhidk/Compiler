@@ -1,11 +1,9 @@
 package miniplc0java.vm;
 
 import miniplc0java.analyser.FunctionTable;
-import miniplc0java.analyser.SymbolEntry;
+import miniplc0java.analyser.Type;
 import miniplc0java.instruction.Instruction;
 
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 
 public class FunctionDef {
@@ -24,14 +22,14 @@ public class FunctionDef {
 
     public FunctionDef(FunctionTable functionTable) {
         this.name = functionTable.getOrder();
-        if (functionTable.getType().equals("void"))
+        if (functionTable.getType() == Type.void_ty)
             this.return_slots = 0;
         else
             this.return_slots = 1;
-        this.param_slots = functionTable.getArgsTable().size();
-        this.loc_slots = functionTable.getLocalTable().size();
-        this.body_count = functionTable.getBody().size();
+        this.param_slots = functionTable.getArgs();
+        this.loc_slots = functionTable.getLocals();
         this.body = functionTable.getBody();
+        this.body_count = this.body.size();
     }
 
     @Override

@@ -1,5 +1,6 @@
 package miniplc0java.analyser;
 
+import com.sun.source.tree.Scope;
 import miniplc0java.error.AnalyzeError;
 import miniplc0java.error.CompileError;
 import miniplc0java.error.ErrorCode;
@@ -22,7 +23,12 @@ public final class Analyser {
     /**
      * 全局符号表
      */
-    HashMap<String, SymbolEntry> globalTable;
+    SymbolTable globalTable;
+
+    /**
+     * 整体符号表
+     */
+    SymbolTable symbolTable;
 
     /**
      * 函数符号表及指令集
@@ -39,32 +45,26 @@ public final class Analyser {
      */
     Token peekedToken = null;
 
-    /**
-     * 下一个变量的栈偏移
-     */
-    int nextOffset = 0;
-
-    public Analyser(Tokenizer tokenizer) {
+    public Analyser(Tokenizer tokenizer, SymbolTable globalTable, HashMap<String, FunctionTable> functionTables) {
         this.tokenizer = tokenizer;
-        this.globalTable = new LinkedHashMap<>();
-        this.functionTables = new LinkedHashMap<>();
+        this.globalTable = globalTable;
+        this.symbolTable = globalTable;
+        this.functionTables = functionTables;
         this.functionTable = init_start();
     }
 
-    public Map<String, Object> analyse() throws CompileError {
+    public void analyse() throws CompileError {
         analyseProgram();
         int order = functionTables.get("main").order;
         addInstruction(Operation.call, order);
-        Map<String, Object> map = new HashMap<>();
-        map.put("globalTable", globalTable);
-        map.put("functionTables", functionTables);
-        return map;
     }
 
     public FunctionTable init_start() {
-        FunctionTable functionTable = new FunctionTable(0);
-        functionTables.put("_start",functionTable);
-        globalTable.put("_start", new SymbolEntry(false, true, getNextVariableOffset(), 1, Type.void_ty, 0, 0));
+        String name = "_start";
+        int order = 0;
+        FunctionTable functionTable = new FunctionTable(order);
+        functionTables.put(name, functionTable);
+        globalTable.put(name, new SymbolEntry(false, true, 1, Type.void_ty, 0, order));
         return functionTable;
     }
 
@@ -141,58 +141,41 @@ public final class Analyser {
         }
     }
 
-    /**
-     * 获取下一个变量的栈偏移
-     *
-     * @return
-     */
-    private int getNextVariableOffset() {
-        return this.nextOffset++;
-    }
-
     public SymbolEntry getSymbolEntry(String name) {
-        if (functionTable.argsTable.get(name) != null) {
-            return functionTable.argsTable.get(name);
-        } else if (functionTable.localTable.get(name) != null) {
-            return functionTable.localTable.get(name);
-        } else {
-            return globalTable.get(name);
-        }
+        return symbolTable.get(name);
     }
 
     public SymbolEntry addSymbol(String name, boolean isInitialized, boolean isConstant, Pos curPos, Type type, boolean isArg) throws AnalyzeError {
-        int order;
+        int order, scope, def = 1;
         SymbolEntry symbol;
-        // 插入全局变量
-        if (this.functionTable.order == 0) {
-            if (globalTable.get(name) != null)
-                throw new AnalyzeError(ErrorCode.DuplicateDeclaration, curPos);
-            order = globalTable.size();
-            symbol = new SymbolEntry(isConstant, isInitialized, getNextVariableOffset(), 1, type, 0, order);
-            globalTable.put(name, symbol);
+
+        if (symbolTable.getCurrent(name) != null)
+            throw new AnalyzeError(ErrorCode.DuplicateDeclaration, curPos);
+
+        if (functionTable.isGlobal()) {
+            scope = 0;
+        } else if (isArg) {
+            scope = 1;
+        } else {
+            scope = 2;
         }
-        // 插入形参
-        else if (isArg) {
-            if (functionTable.argsTable.get(name) != null)
-                throw new AnalyzeError(ErrorCode.DuplicateDeclaration, curPos);
-            order = this.functionTable.argsTable.size() + 1; // return value is arg 0
-            symbol = new SymbolEntry(isConstant, isInitialized, getNextVariableOffset(), 1, type, 1, order);
-            this.functionTable.argsTable.put(name, symbol);
+
+        if (isArg) {
+            order = functionTable.args + 1;
+            functionTable.args ++;
+        } else {
+            order = functionTable.locals;
+            functionTable.locals ++;
         }
-        // 插入局部变量
-        else {
-            if (functionTable.localTable.get(name) != null)
-                throw new AnalyzeError(ErrorCode.DuplicateDeclaration, curPos);
-            order = this.functionTable.localTable.size();
-            symbol = new SymbolEntry(isConstant, isInitialized, getNextVariableOffset(), 1, type, 1, order);
-            this.functionTable.localTable.put(name, symbol);
-        }
+
+        symbol = new SymbolEntry(isConstant, isInitialized, def, type, scope, order);
+        symbolTable.put(name, symbol);
         return symbol;
     }
 
     public SymbolEntry addString(String value) {
-        int order = globalTable.size();
-        SymbolEntry symbol = new SymbolEntry(true, true, getNextVariableOffset(), 1, Type.string_ty, 0, order);
+        int order = globalTable.symbolMap.size();
+        SymbolEntry symbol = new SymbolEntry(true, true, 1, Type.string_ty, 0, order);
         globalTable.put(value, symbol);
         return symbol;
     }
@@ -230,10 +213,14 @@ public final class Analyser {
         SymbolEntry symbolEntry = addString(name);
         this.functionTable = new FunctionTable(symbolEntry.order);
         functionTables.put(name, functionTable);
+
+        SymbolTable symbolTable = new SymbolTable(this.symbolTable);
+        this.symbolTable = symbolTable;
     }
 
     public void endFunction() {
         this.functionTable = functionTables.get("_start");
+        this.symbolTable = this.symbolTable.upperTable;
     }
 
     private void analyseProgram() throws CompileError {
@@ -303,8 +290,8 @@ public final class Analyser {
         var nameToken = expect(TokenType.IDENT);
         expect(TokenType.COLON);
         Type type = analyseType();
-
         String name = (String) nameToken.getValue();
+
         addSymbol(name, isInitialized, isConstant, nameToken.getStartPos(), type, isArg);
     }
 
@@ -328,7 +315,10 @@ public final class Analyser {
             } else if (tokenType == TokenType.RETURN_KW) {
                 analyseReturnStmt();
             } else if (tokenType == TokenType.L_BRACE) {
+                SymbolTable symbolTable = new SymbolTable(this.symbolTable);
+                this.symbolTable = symbolTable;
                 analyseBlockStmt();
+                this.symbolTable = symbolTable.upperTable;
             } else if (tokenType == TokenType.SEMICOLON) {
                 next();
             } else if (isExpr()){
@@ -357,12 +347,6 @@ public final class Analyser {
         String name = (String) nameToken.getValue();
         SymbolEntry symbolEntry = addSymbol(name, isInitialized, isConstant, nameToken.getStartPos(), type, isArg);
 
-        if (symbolEntry.scope == 0) {
-            addInstruction(Operation.globa, symbolEntry.order);
-        } else if (symbolEntry.scope == 2) {
-            addInstruction(Operation.loca, symbolEntry.order);
-        }
-
         if (peek().getTokenType() == TokenType.ASSIGN) {
             expect(TokenType.ASSIGN);
             SymbolEntry exprSymbolEntry = analyseExpr();
@@ -370,6 +354,12 @@ public final class Analyser {
             if (type != exprType)
                 throw new Error("Illegal declaration");
             symbolEntry.setInitialized(true);
+
+            if (symbolEntry.scope == 0) {
+                addInstruction(Operation.globa, symbolEntry.order);
+            } else if (symbolEntry.scope == 2) {
+                addInstruction(Operation.loca, symbolEntry.order);
+            }
             addInstruction(Operation.store64);
         }
 
