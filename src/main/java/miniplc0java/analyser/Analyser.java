@@ -688,7 +688,7 @@ public final class Analyser {
             expect(TokenType.R_PAREN);
         }
         // literal expr
-        else if (tt == TokenType.UINT_LITERAL || tt == TokenType.CHAR_LITERAL || tt == TokenType.STRING_LITERAL) {
+        else if (tt == TokenType.UINT_LITERAL || tt == TokenType.CHAR_LITERAL || tt == TokenType.STRING_LITERAL || tt == TokenType.DOUBLE_LITERAL) {
             symbolEntry = analyseLiteral();
         }
         // call & ident expr
@@ -748,7 +748,7 @@ public final class Analyser {
         switch (tt) {
             case UINT_LITERAL:
             case CHAR_LITERAL:
-                addInstruction(Operation.push, (Long) nameToken.getValue());
+                addInstruction(Operation.push, (long) nameToken.getValue());
                 return new SymbolEntry(Type.int_ty);
             case STRING_LITERAL:
                 SymbolEntry symbol = addString((String) nameToken.getValue());
