@@ -228,7 +228,6 @@ public final class Analyser {
         // item -> function | decl_stmt
         // decl_stmt -> let_decl_stmt | const_decl_stmt
 
-        System.out.println("analyseProgram()");
         while(true) {
             var peeked = peek();
             if (peeked.getTokenType() == TokenType.FN_KW) {
@@ -250,7 +249,6 @@ public final class Analyser {
     private void analyseFunction() throws CompileError {
         // function -> 'fn' IDENT '(' function_param_list? ')' '->' ty block_stmt
 
-        System.out.println("analyseFunction()");
         expect(TokenType.FN_KW);
         var nameToken = expect(TokenType.IDENT);
 
@@ -335,7 +333,6 @@ public final class Analyser {
     private void analyseLetDeclStmt() throws CompileError {
         // let_decl_stmt -> 'let' IDENT ':' ty ('=' expr)? ';'
 
-        System.out.println("analyseLetDeclStmt()");
         expect(TokenType.LET_KW);
         var nameToken = expect(TokenType.IDENT);
         expect(TokenType.COLON);
@@ -482,7 +479,6 @@ public final class Analyser {
         // ident_expr -> IDENT
         // group_expr -> '(' expr ')'
 
-        System.out.println("expr");
         SymbolEntry lsymbolEntry = analyseExpr1();
         Type ltype = lsymbolEntry.getType();
         if (nextIf(TokenType.ASSIGN) != null) {
@@ -509,7 +505,6 @@ public final class Analyser {
     }
 
     private SymbolEntry analyseExpr1() throws CompileError {
-        System.out.println("expr1");
         SymbolEntry symbolEntry = analyseExpr2();
         Type ltype = symbolEntry.getType();
         while (peek().getTokenType() == TokenType.GT || peek().getTokenType() == TokenType.LT || peek().getTokenType() == TokenType.GE
@@ -561,7 +556,6 @@ public final class Analyser {
     }
 
     private SymbolEntry analyseExpr2() throws CompileError {
-        System.out.println("expr2");
         SymbolEntry symbolEntry = analyseExpr3();
         Type ltype = symbolEntry.getType();
         while (peek().getTokenType() == TokenType.PLUS || peek().getTokenType() == TokenType.MINUS) {
@@ -593,7 +587,6 @@ public final class Analyser {
     }
 
     private SymbolEntry analyseExpr3() throws CompileError {
-        System.out.println("expr3");
         SymbolEntry symbolEntry = analyseExpr4();
         Type ltype = symbolEntry.getType();
         while (peek().getTokenType() == TokenType.MUL || peek().getTokenType() == TokenType.DIV) {
@@ -625,7 +618,6 @@ public final class Analyser {
     }
 
     private SymbolEntry analyseExpr4() throws CompileError {
-        System.out.println("expr4");
         SymbolEntry symbolEntry = analyseExpr5();
         Type type = symbolEntry.getType();
         while (nextIf(TokenType.AS_KW) != null) {
@@ -641,13 +633,12 @@ public final class Analyser {
             } else if (type == Type.double_ty && newType == Type.int_ty) {
                 addInstruction(Operation.ftoi);
             }
-            symbolEntry.setType(newType);
+            symbolEntry = new SymbolEntry(newType);
         }
         return symbolEntry;
     }
 
     private SymbolEntry analyseExpr5() throws CompileError {
-        System.out.println("expr5");
         boolean isNeg = false;
         while (nextIf(TokenType.MINUS) != null) {
             isNeg = true;
@@ -669,7 +660,6 @@ public final class Analyser {
     }
 
     private SymbolEntry analyseExpr6() throws CompileError {
-        System.out.println("expr6");
         TokenType tt = peek().getTokenType();
         SymbolEntry symbolEntry = null;
         // group expr
