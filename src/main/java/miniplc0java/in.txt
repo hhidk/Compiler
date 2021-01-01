@@ -1,11 +1,2 @@
-fn main() -> void {
-    let count : int = 2;
-    while  count > 0 {
-        let needle:int = 1;
-        let x:int = 2;
-        while x > 0 {
-            let needle : int = 0;
-        }
-        count = count - 1;
-    }
-}
+fn fib(n:int)->int
+{if n<1}

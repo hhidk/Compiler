@@ -318,7 +318,7 @@ public final class Analyser {
 
         SymbolTable symbolTable = new SymbolTable(this.symbolTable);
         this.symbolTable = symbolTable;
-        if (argsMap.size() != 1) {
+        if (argsMap.size() != 0) {
             this.symbolTable.putAllArgs(argsMap);
             argsMap.clear();
         }
