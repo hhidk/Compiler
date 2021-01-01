@@ -195,6 +195,7 @@ public final class Analyser {
         int order = globalTable.symbolMap.size();
         SymbolEntry symbol = new SymbolEntry(true, true, 1, Type.string_ty, 0, order);
         globalTable.put(value, symbol);
+        functionTables.get("_start").locals ++;
         return symbol;
     }
 
@@ -365,18 +366,18 @@ public final class Analyser {
         SymbolEntry symbolEntry = addSymbol(name, isInitialized, isConstant, nameToken.getStartPos(), type, isArg);
 
         if (peek().getTokenType() == TokenType.ASSIGN) {
+            if (symbolEntry.scope == 0) {
+                addInstruction(Operation.globa, symbolEntry.order);
+            } else if (symbolEntry.scope == 2) {
+                addInstruction(Operation.loca, symbolEntry.order);
+            }
+
             expect(TokenType.ASSIGN);
             SymbolEntry exprSymbolEntry = analyseExpr();
             Type exprType = exprSymbolEntry.getType();
             if (type != exprType)
                 throw new Error("Illegal declaration");
             symbolEntry.setInitialized(true);
-
-            if (symbolEntry.scope == 0) {
-                addInstruction(Operation.globa, symbolEntry.order);
-            } else if (symbolEntry.scope == 2) {
-                addInstruction(Operation.loca, symbolEntry.order);
-            }
             addInstruction(Operation.store64);
         }
 
@@ -706,7 +707,7 @@ public final class Analyser {
                         analyseCallParamList();
                         expect(TokenType.R_PAREN);
                     }
-                    addInstruction(Operation.call, functionTables.get(name).order);
+                    addInstruction(Operation.callname, functionTables.get(name).order);
                     symbolEntry = new SymbolEntry(functionTables.get(name).type);
                 }
                 // call stdlib
