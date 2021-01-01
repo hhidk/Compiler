@@ -60,7 +60,7 @@ public final class Analyser {
     public void analyse() throws CompileError {
         analyseProgram();
         int order = functionTables.get("main").order;
-        addInstruction(Operation.call, order);
+        addInstruction(Operation.callname, order);
     }
 
     public FunctionTable init_start() {
@@ -231,14 +231,10 @@ public final class Analyser {
         SymbolEntry symbolEntry = addString(name);
         this.functionTable = new FunctionTable(symbolEntry.order);
         functionTables.put(name, functionTable);
-
-//        SymbolTable symbolTable = new SymbolTable(this.symbolTable);
-//        this.symbolTable = symbolTable;
     }
 
     public void endFunction() {
         this.functionTable = functionTables.get("_start");
-//        this.symbolTable = this.symbolTable.upperTable;
     }
 
     private void analyseProgram() throws CompileError {
