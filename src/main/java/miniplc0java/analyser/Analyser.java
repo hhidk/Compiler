@@ -1,6 +1,5 @@
 package miniplc0java.analyser;
 
-import com.sun.source.tree.Scope;
 import miniplc0java.error.AnalyzeError;
 import miniplc0java.error.CompileError;
 import miniplc0java.error.ErrorCode;
@@ -12,7 +11,6 @@ import miniplc0java.tokenizer.Token;
 import miniplc0java.tokenizer.TokenType;
 import miniplc0java.tokenizer.Tokenizer;
 import miniplc0java.util.Pos;
-import miniplc0java.vm.FunctionDef;
 
 import java.util.*;
 
@@ -29,6 +27,11 @@ public final class Analyser {
      * 整体符号表
      */
     SymbolTable symbolTable;
+
+    /**
+     * 参数暂存
+     */
+    HashMap argsMap;
 
     /**
      * 函数符号表及指令集
@@ -51,6 +54,7 @@ public final class Analyser {
         this.symbolTable = globalTable;
         this.functionTables = functionTables;
         this.functionTable = init_start();
+        this.argsMap = new LinkedHashMap();
     }
 
     public void analyse() throws CompileError {
@@ -62,9 +66,9 @@ public final class Analyser {
     public FunctionTable init_start() {
         String name = "_start";
         int order = 0;
+        addString(name);
         FunctionTable functionTable = new FunctionTable(order);
         functionTables.put(name, functionTable);
-        globalTable.put(name, new SymbolEntry(false, true, 1, Type.void_ty, 0, order));
         return functionTable;
     }
 
@@ -173,6 +177,20 @@ public final class Analyser {
         return symbol;
     }
 
+    public SymbolEntry addArg(String name, boolean isInitialized, boolean isConstant, Pos curPos, Type type, boolean isArg) throws AnalyzeError {
+        int order = functionTable.args + 1, scope = 1, def = 1;
+        SymbolEntry symbol;
+
+        if (argsMap.get(name) != null)
+            throw new AnalyzeError(ErrorCode.DuplicateDeclaration, curPos);
+
+        functionTable.args ++;
+
+        symbol = new SymbolEntry(isConstant, isInitialized, def, type, scope, order);
+        argsMap.put(name, symbol);
+        return symbol;
+    }
+
     public SymbolEntry addString(String value) {
         int order = globalTable.symbolMap.size();
         SymbolEntry symbol = new SymbolEntry(true, true, 1, Type.string_ty, 0, order);
@@ -214,13 +232,13 @@ public final class Analyser {
         this.functionTable = new FunctionTable(symbolEntry.order);
         functionTables.put(name, functionTable);
 
-        SymbolTable symbolTable = new SymbolTable(this.symbolTable);
-        this.symbolTable = symbolTable;
+//        SymbolTable symbolTable = new SymbolTable(this.symbolTable);
+//        this.symbolTable = symbolTable;
     }
 
     public void endFunction() {
         this.functionTable = functionTables.get("_start");
-        this.symbolTable = this.symbolTable.upperTable;
+//        this.symbolTable = this.symbolTable.upperTable;
     }
 
     private void analyseProgram() throws CompileError {
@@ -290,13 +308,20 @@ public final class Analyser {
         Type type = analyseType();
         String name = (String) nameToken.getValue();
 
-        addSymbol(name, isInitialized, isConstant, nameToken.getStartPos(), type, isArg);
+        addArg(name, isInitialized, isConstant, nameToken.getStartPos(), type, isArg);
     }
 
     private void analyseBlockStmt() throws CompileError {
         // block_stmt -> '{' stmt* '}'
         // stmt -> expr_stmt | decl_stmt | if_stmt | while_stmt |
         //          return_stmt | block_stmt | empty_stmt
+
+        SymbolTable symbolTable = new SymbolTable(this.symbolTable);
+        this.symbolTable = symbolTable;
+        if (argsMap.size() != 1) {
+            this.symbolTable.putAllArgs(argsMap);
+            argsMap.clear();
+        }
 
         expect(TokenType.L_BRACE);
         TokenType tokenType = peek().getTokenType();
@@ -313,10 +338,7 @@ public final class Analyser {
             } else if (tokenType == TokenType.RETURN_KW) {
                 analyseReturnStmt();
             } else if (tokenType == TokenType.L_BRACE) {
-                SymbolTable symbolTable = new SymbolTable(this.symbolTable);
-                this.symbolTable = symbolTable;
                 analyseBlockStmt();
-                this.symbolTable = symbolTable.upperTable;
             } else if (tokenType == TokenType.SEMICOLON) {
                 next();
             } else if (isExpr()){
@@ -328,6 +350,8 @@ public final class Analyser {
             tokenType = peek().getTokenType();
         }
         expect(TokenType.R_BRACE);
+
+        this.symbolTable = symbolTable.upperTable;
     }
 
     private void analyseLetDeclStmt() throws CompileError {
@@ -514,9 +538,9 @@ public final class Analyser {
             SymbolEntry rsymbolEntry = analyseExpr2();
             Type rtype = rsymbolEntry.getType();
 
-            if (!symbolEntry.isInitialized || !rsymbolEntry.isInitialized)
-                throw new Error("Expression not initialized");
-            else if (ltype != rtype)
+//            if (!symbolEntry.isInitialized || !rsymbolEntry.isInitialized)
+//                throw new Error("Expression not initialized");
+            if (ltype != rtype)
                 throw new Error("Cannot compare different type");
 
             if (ltype == Type.int_ty) {

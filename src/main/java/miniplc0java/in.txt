@@ -1,3 +1,11 @@
 fn main() -> void {
-    putstr("//this is not a comment");
+    let count : int = 2;
+    while  count > 0 {
+        let needle:int = 1;
+        let x:int = 2;
+        while x > 0 {
+            let needle : int = 0;
+        }
+        count = count - 1;
+    }
 }

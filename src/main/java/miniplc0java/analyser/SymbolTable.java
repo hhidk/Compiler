@@ -25,6 +25,10 @@ public class SymbolTable {
         symbolMap.put(name, symbolEntry);
     }
 
+    public void putAllArgs(HashMap<String, SymbolEntry> map) {
+        symbolMap.putAll(map);
+    }
+
     public SymbolEntry get(String name) {
         SymbolEntry symbolEntry;
         SymbolTable symbolTable = this;
