@@ -66,9 +66,9 @@ public final class Analyser {
     public FunctionTable init_start() {
         String name = "_start";
         int order = 0;
-        addString(name);
         FunctionTable functionTable = new FunctionTable(order);
         functionTables.put(name, functionTable);
+        addString(name);
         return functionTable;
     }
 
