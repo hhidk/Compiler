@@ -71,14 +71,13 @@ public class o0 {
     public String toHexByte(int x) {
         int i = x % 256;
         StringBuilder stringBuilder = new StringBuilder();
-        if (i < 16) {
-            stringBuilder.append(0);
-            stringBuilder.append(Integer.toHexString(i));
-        } else if (i < 128) {
-            stringBuilder.append(Integer.toHexString(i));
-        } else {
-            stringBuilder.append(Integer.toHexString(i));
+        String s = Integer.toBinaryString(i);
+        int length = s.length();
+        for (int j = 0; j < 8 - length; j++) {
+            stringBuilder.append("0");
         }
+        stringBuilder.append(s);
+
         return stringBuilder.toString();
     }
 
