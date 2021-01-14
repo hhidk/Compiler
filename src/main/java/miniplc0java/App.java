@@ -32,10 +32,11 @@ public class App {
             return;
         }
 
-//        var inputFileName = result.getString("input");
-//        var outputFileName = result.getString("asm");
-        var inputFileName = args[0];
-        var outputFileName = args[1];
+        var inputFileName = result.getString("input");
+        var outputFileName = result.getString("asm");
+        System.out.println(inputFileName + " " + outputFileName);
+//        var inputFileName = args[0];
+//        var outputFileName = args[1];
 
         InputStream input;
         if (inputFileName.equals("-")) {
@@ -87,7 +88,7 @@ public class App {
         var parser = builder.build();
         parser.addArgument("-t", "--tokenize").help("Tokenize the input").action(Arguments.storeTrue());
         parser.addArgument("-l", "--analyse").help("Analyze the input").action(Arguments.storeTrue());
-        parser.addArgument("-o", "--output").help("Set the output file").required(true).dest("output")
+        parser.addArgument("-o", "--output").help("Set the output file").required(true).dest("asm")
                 .action(Arguments.store());
         parser.addArgument("file").required(true).dest("input").action(Arguments.store()).help("Input file");
         return parser;
