@@ -59,6 +59,7 @@ public class AnalyserTest {
             o0 o00 = new o0(globalTable, functionTables);
 
             System.out.println(o00.toString());
+            System.out.println(o00.toVmCode());
             output.print(o00.toVmCode());
         } catch (Exception e) {
             e.printStackTrace();

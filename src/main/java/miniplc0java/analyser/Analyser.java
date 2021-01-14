@@ -60,7 +60,7 @@ public final class Analyser {
     public void analyse() throws CompileError {
         analyseProgram();
         int order = functionTables.get("main").order;
-        addInstruction(Operation.call, order);
+        addInstruction(Operation.callname, order);
     }
 
     public FunctionTable init_start() {
