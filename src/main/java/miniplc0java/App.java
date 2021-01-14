@@ -32,8 +32,10 @@ public class App {
             return;
         }
 
-        var inputFileName = result.getString("input");
-        var outputFileName = result.getString("asm");
+//        var inputFileName = result.getString("input");
+//        var outputFileName = result.getString("asm");
+        var inputFileName = args[0];
+        var outputFileName = args[1];
 
         InputStream input;
         if (inputFileName.equals("-")) {
