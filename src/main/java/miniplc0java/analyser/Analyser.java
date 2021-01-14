@@ -235,6 +235,7 @@ public final class Analyser {
     }
 
     public void endFunction() {
+        addInstruction(Operation.ret);
         this.functionTable = functionTables.get("_start");
     }
 
