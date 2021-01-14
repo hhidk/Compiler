@@ -754,7 +754,7 @@ public final class Analyser {
             case STRING_LITERAL:
                 SymbolEntry symbol = addString((String) nameToken.getValue());
                 int order = symbol.order;
-                addInstruction(Operation.push, order);
+                addInstruction(Operation.push, (long) order);
                 return new SymbolEntry(Type.string_ty);
             case DOUBLE_LITERAL:
                 addInstruction(Operation.push, (Double) nameToken.getValue());
