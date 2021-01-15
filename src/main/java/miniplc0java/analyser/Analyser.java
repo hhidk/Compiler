@@ -59,8 +59,11 @@ public final class Analyser {
 
     public void analyse() throws CompileError {
         analyseProgram();
+        // 设置_start函数调用main
         int order = functionTables.get("main").order;
         addInstruction(Operation.callname, order);
+        // 设置_start函数局部变量数为0
+        functionTable.locals = 0;
     }
 
     public FunctionTable init_start() {
@@ -235,7 +238,8 @@ public final class Analyser {
     }
 
     public void endFunction() {
-        addInstruction(Operation.ret);
+        if (this.functionTable.body.get(this.functionTable.body.size() - 1).getOpt() != Operation.ret)
+            addInstruction(Operation.ret);
         this.functionTable = functionTables.get("_start");
     }
 
@@ -424,7 +428,7 @@ public final class Analyser {
         int offset1 = getInstructionOffset();
 
         analyseBlockStmt();
-        Instruction br2 = addInstruction(Operation.brfalse, 0);
+        Instruction br2 = addInstruction(Operation.br, 0);
         int offset2 = getInstructionOffset();
         br1.setX(offset2 - offset1);
 
