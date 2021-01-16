@@ -53,67 +53,21 @@ public class o0 {
                 '}';
     }
 
-    public String toVmCode() {
-        StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append(toHexString(magic));
-        stringBuilder.append(toHexString(version));
-        stringBuilder.append(toHexString(globals_count));
+    public ArrayList<Byte> toVmCode() {
+        ArrayList<Byte> bytes = new ArrayList<>();
+        bytes.addAll(BytesHandler.handleInt(magic));
+        bytes.addAll(BytesHandler.handleInt(version));
+        bytes.addAll(BytesHandler.handleInt(globals_count));
         for (GlobalDef globalDef : globals) {
-            stringBuilder.append(globalDef.toVmCode());
+            bytes.addAll(globalDef.toVmCode());
         }
-        stringBuilder.append(toHexString(functions_count));
+        bytes.addAll(BytesHandler.handleInt(functions_count));
         for (FunctionDef functionDef : functions) {
-            stringBuilder.append(functionDef.toVmCode());
+            bytes.addAll(functionDef.toVmCode());
         }
-        return stringBuilder.toString();
+        return bytes;
     }
 
-    public String toHexByte(int x) {
-        int i = x % 256;
-        StringBuilder stringBuilder = new StringBuilder();
-        String s = Integer.toBinaryString(i);
-        int length = s.length();
-        for (int j = 0; j < 8 - length; j++) {
-            stringBuilder.append("0");
-        }
-        stringBuilder.append(s);
 
-        return stringBuilder.toString();
-    }
-
-    public String toHexString(int x) {
-        StringBuilder stringBuilder = new StringBuilder();
-
-        stringBuilder.append(toHexByte(x >> 24));
-        stringBuilder.append(toHexByte(x >> 16));
-        stringBuilder.append(toHexByte(x >> 8));
-        stringBuilder.append(toHexByte(x));
-
-        return stringBuilder.toString();
-    }
-
-    public String toHexString(long x) {
-        StringBuilder stringBuilder = new StringBuilder();
-
-        stringBuilder.append(toHexByte((int) (x >> 56)));
-        stringBuilder.append(toHexByte((int) ((x >> 48) % 256)));
-        stringBuilder.append(toHexByte((int) ((x >> 40) % 256)));
-        stringBuilder.append(toHexByte((int) ((x >> 32) % 256)));
-        stringBuilder.append(toHexByte((int) ((x >> 24) % 256)));
-        stringBuilder.append(toHexByte((int) ((x >> 16) % 256)));
-        stringBuilder.append(toHexByte((int) ((x >> 8) % 256)));
-        stringBuilder.append(toHexByte((int) (x % 256)));
-
-        return stringBuilder.toString();
-    }
-
-    public String toHexString(String str) {
-        StringBuilder stringBuilder = new StringBuilder();
-        for (int i = 0; i < str.length(); i++) {
-            int x = str.charAt(i);
-            stringBuilder.append(toHexByte(x));
-        }
-        return stringBuilder.toString();
-    }
 
 }

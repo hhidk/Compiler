@@ -4,6 +4,7 @@ import miniplc0java.analyser.FunctionTable;
 import miniplc0java.analyser.Type;
 import miniplc0java.instruction.Instruction;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class FunctionDef {
@@ -50,83 +51,30 @@ public class FunctionDef {
                 '}';
     }
 
-    public String toVmCode() {
-        StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append(toHexString(name));
-        stringBuilder.append(toHexString(return_slots));
-        stringBuilder.append(toHexString(param_slots));
-        stringBuilder.append(toHexString(loc_slots));
-        stringBuilder.append(toHexString(body_count));
+    public ArrayList<Byte> toVmCode() {
+        ArrayList<Byte> bytes = new ArrayList<>();
+        bytes.addAll(BytesHandler.handleInt(name));
+        bytes.addAll(BytesHandler.handleInt(return_slots));
+        bytes.addAll(BytesHandler.handleInt(param_slots));
+        bytes.addAll(BytesHandler.handleInt(loc_slots));
+        bytes.addAll(BytesHandler.handleInt(body_count));
         for (Instruction instruction : body) {
             int optnum = instruction.getOpt().getOptnum();
-            stringBuilder.append(toHexByte(optnum));
+            bytes.addAll(BytesHandler.handleByte(optnum));
             Object x = instruction.getX();
             if (x == null) {
                 continue;
             }
             if (x instanceof Long) {
-                stringBuilder.append(toHexString((long) x));
+                bytes.addAll(BytesHandler.handleLong((long) x));
             } else if (x instanceof Double) {
-                stringBuilder.append(toHexString((double) x));
+                bytes.addAll(BytesHandler.handleDouble((double) x));
             } else if (x instanceof Integer) {
-                stringBuilder.append(toHexString((int) x));
+                bytes.addAll(BytesHandler.handleInt((int) x));
             }
         }
 
-        return stringBuilder.toString();
-    }
-
-    public String toHexByte(int x) {
-        int i = x % 256;
-        StringBuilder stringBuilder = new StringBuilder();
-        String s = Integer.toBinaryString(i);
-        int length = s.length();
-        for (int j = 0; j < 8 - length; j++) {
-            stringBuilder.append("0");
-        }
-        stringBuilder.append(s);
-
-        return stringBuilder.toString();
-    }
-
-    public String toHexString(int x) {
-        StringBuilder stringBuilder = new StringBuilder();
-
-        stringBuilder.append(toHexByte(x >> 24));
-        stringBuilder.append(toHexByte(x >> 16));
-        stringBuilder.append(toHexByte(x >> 8));
-        stringBuilder.append(toHexByte(x));
-
-        return stringBuilder.toString();
-    }
-
-    public String toHexString(long x) {
-        StringBuilder stringBuilder = new StringBuilder();
-
-        stringBuilder.append(toHexByte((int) (x >> 56)));
-        stringBuilder.append(toHexByte((int) ((x >> 48) % 256)));
-        stringBuilder.append(toHexByte((int) ((x >> 40) % 256)));
-        stringBuilder.append(toHexByte((int) ((x >> 32) % 256)));
-        stringBuilder.append(toHexByte((int) ((x >> 24) % 256)));
-        stringBuilder.append(toHexByte((int) ((x >> 16) % 256)));
-        stringBuilder.append(toHexByte((int) ((x >> 8) % 256)));
-        stringBuilder.append(toHexByte((int) (x % 256)));
-
-        return stringBuilder.toString();
-    }
-
-    public String toHexString(double x) {
-        long l = Double.doubleToRawLongBits(x);
-        return toHexString(l);
-    }
-
-    public String toHexString(String str) {
-        StringBuilder stringBuilder = new StringBuilder();
-        for (int i = 0; i < str.length(); i++) {
-            int x = str.charAt(i);
-            stringBuilder.append(toHexByte(x));
-        }
-        return stringBuilder.toString();
+        return bytes;
     }
 
 }

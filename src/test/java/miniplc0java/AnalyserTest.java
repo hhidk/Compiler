@@ -26,7 +26,7 @@ public class AnalyserTest {
     public void test() {
         InputStream input;
         String inputFileName = "E:\\Learning\\编译原理\\作业\\Compiler\\src\\main\\java\\miniplc0java\\in.txt";
-        String outputFileName = "E:\\Learning\\编译原理\\作业\\Compiler\\src\\main\\java\\miniplc0java\\out.txt";
+        String outputFileName = "E:\\Learning\\编译原理\\作业\\Compiler\\src\\main\\java\\miniplc0java\\out.o0";
         try {
             input = new FileInputStream(inputFileName);
         } catch (FileNotFoundException e) {
@@ -36,9 +36,9 @@ public class AnalyserTest {
             return;
         }
 
-        PrintStream output;
+        FileOutputStream output;
         try {
-            output = new PrintStream(new FileOutputStream(outputFileName));
+            output = new FileOutputStream(outputFileName);
         } catch (FileNotFoundException e) {
             System.err.println("Cannot open output file.");
             e.printStackTrace();
@@ -60,7 +60,9 @@ public class AnalyserTest {
 
             System.out.println(o00.toString());
             System.out.println(o00.toVmCode());
-            output.print(o00.toVmCode());
+            for (Byte b : o00.toVmCode()) {
+                output.write(b);
+            }
         } catch (Exception e) {
             e.printStackTrace();
             return;
@@ -70,6 +72,14 @@ public class AnalyserTest {
     private static Tokenizer tokenize(StringIter iter) {
         var tokenizer = new Tokenizer(iter);
         return tokenizer;
+    }
+
+    private static void write(String s, FileOutputStream output) throws IOException {
+        for (int i = 0; i < s.length(); i+=8) {
+            String sub = s.substring(i, i + 8);
+            byte b = Byte.parseByte(sub);
+            output.write(b);
+        }
     }
 
 }

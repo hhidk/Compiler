@@ -68,8 +68,9 @@ public class App {
 
         System.out.println(o00.toString());
         System.out.println(o00.toVmCode());
-        byte[] bytes = o00.toVmCode().getBytes();
-        output.write(bytes);
+        for (Byte b : o00.toVmCode()) {
+            output.write(b);
+        }
     }
 
     private static ArgumentParser buildArgparse() {
@@ -87,4 +88,5 @@ public class App {
         var tokenizer = new Tokenizer(iter);
         return tokenizer;
     }
+
 }
