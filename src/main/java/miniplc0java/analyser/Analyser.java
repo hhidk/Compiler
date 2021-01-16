@@ -238,7 +238,7 @@ public final class Analyser {
     }
 
     public void endFunction() {
-        if (this.functionTable.body.get(this.functionTable.body.size() - 1).getOpt() != Operation.ret)
+        if (this.functionTable.body.size() == 0 || this.functionTable.body.get(this.functionTable.body.size() - 1).getOpt() != Operation.ret)
             addInstruction(Operation.ret);
         this.functionTable = functionTables.get("_start");
     }
@@ -667,7 +667,7 @@ public final class Analyser {
     private SymbolEntry analyseExpr5() throws CompileError {
         boolean isNeg = false;
         while (nextIf(TokenType.MINUS) != null) {
-            isNeg = true;
+            isNeg = !isNeg;
         }
         SymbolEntry symbolEntry = analyseExpr6();
         Type type = symbolEntry.getType();

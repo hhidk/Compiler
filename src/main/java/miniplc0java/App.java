@@ -1,10 +1,6 @@
 package miniplc0java;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.io.PrintStream;
+import java.io.*;
 import java.util.*;
 
 import miniplc0java.analyser.Analyser;
@@ -22,7 +18,7 @@ import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
 
 public class App {
-    public static void main(String[] args) throws CompileError {
+    public static void main(String[] args) throws CompileError, IOException {
         var argparse = buildArgparse();
         Namespace result;
         try {
@@ -39,31 +35,24 @@ public class App {
 //        var outputFileName = args[1];
 
         InputStream input;
-        if (inputFileName.equals("-")) {
-            input = System.in;
-        } else {
-            try {
-                input = new FileInputStream(inputFileName);
-            } catch (FileNotFoundException e) {
-                System.err.println("Cannot find input file.");
-                e.printStackTrace();
-                System.exit(2);
-                return;
-            }
+        try {
+            input = new FileInputStream(inputFileName);
+        } catch (FileNotFoundException e) {
+            System.err.println("Cannot find input file.");
+            e.printStackTrace();
+            System.exit(2);
+            return;
         }
 
-        PrintStream output;
-        if (outputFileName.equals("-")) {
-            output = System.out;
-        } else {
-            try {
-                output = new PrintStream(new FileOutputStream(outputFileName));
-            } catch (FileNotFoundException e) {
-                System.err.println("Cannot open output file.");
-                e.printStackTrace();
-                System.exit(2);
-                return;
-            }
+        FileOutputStream output;
+        try {
+            // output = new PrintStream(new FileOutputStream(outputFileName));
+            output = new FileOutputStream(outputFileName);
+        } catch (FileNotFoundException e) {
+            System.err.println("Cannot open output file.");
+            e.printStackTrace();
+            System.exit(2);
+            return;
         }
 
         Scanner scanner;
@@ -79,8 +68,8 @@ public class App {
 
         System.out.println(o00.toString());
         System.out.println(o00.toVmCode());
-        output.print(o00.toVmCode());
-
+        byte[] bytes = o00.toVmCode().getBytes();
+        output.write(bytes);
     }
 
     private static ArgumentParser buildArgparse() {
