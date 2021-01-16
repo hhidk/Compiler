@@ -590,7 +590,7 @@ public final class Analyser {
             SymbolEntry rsymbolEntry = analyseExpr3();
             Type rtype = rsymbolEntry.getType();
 
-            if (!symbolEntry.isInitialized || !rsymbolEntry.isInitialized)
+            if (!symbolEntry.isInitialized && symbolEntry.scope != 0 || !rsymbolEntry.isInitialized && rsymbolEntry.scope != 0)
                 throw new Error("Expression not initialized");
             else if (ltype != rtype)
                 throw new Error("Cannot compare different type");
@@ -645,7 +645,6 @@ public final class Analyser {
 
     private SymbolEntry analyseExpr4() throws CompileError {
         SymbolEntry symbolEntry = analyseExpr5();
-        Type type = symbolEntry.getType();
         while (nextIf(TokenType.AS_KW) != null) {
             Type newType = analyseType();
 
@@ -654,9 +653,9 @@ public final class Analyser {
 
             if (newType == Type.void_ty) {
                 throw new Error("Illegal type transition");
-            } else if (type == Type.int_ty && newType == Type.double_ty) {
+            } else if (symbolEntry.type == Type.int_ty && newType == Type.double_ty) {
                 addInstruction(Operation.itof);
-            } else if (type == Type.double_ty && newType == Type.int_ty) {
+            } else if (symbolEntry.type == Type.double_ty && newType == Type.int_ty) {
                 addInstruction(Operation.ftoi);
             }
             symbolEntry = new SymbolEntry(newType);
