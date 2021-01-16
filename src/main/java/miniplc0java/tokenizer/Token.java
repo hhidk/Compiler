@@ -88,7 +88,7 @@ public class Token {
 //        sb.append("Type: ").append(this.tokenType).append(' ');
 //        sb.append("Value: ").append(this.value);
 //        return sb.toString();
-        return value.toString() + " ";
+        return value.toString();
     }
 
     public String toStringAlt() {

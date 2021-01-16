@@ -43,7 +43,7 @@ public class Tokenizer {
                 token = nextToken();
             }
         }
-        System.out.println(token.toString());
+        System.out.print(token.toString() + " ");
         return token;
     }
 
