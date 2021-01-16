@@ -181,7 +181,7 @@ public final class Analyser {
     }
 
     public SymbolEntry addArg(String name, boolean isInitialized, boolean isConstant, Pos curPos, Type type, boolean isArg) throws AnalyzeError {
-        int order = functionTable.args + 1, scope = 1, def = 1;
+        int order = functionTable.args, scope = 1, def = 1;
         SymbolEntry symbol;
 
         if (argsMap.get(name) != null)
@@ -734,7 +734,10 @@ public final class Analyser {
                 } else if (symbolEntry.scope == 0) {
                     addInstruction(Operation.globa, symbolEntry.order);
                 } else if (symbolEntry.scope == 1) {
-                    addInstruction(Operation.arga, symbolEntry.order);
+                    int offset = 0;
+                    if (functionTable.type != Type.void_ty)
+                        offset = 1;
+                    addInstruction(Operation.arga, symbolEntry.order + offset);
                 } else if (symbolEntry.scope == 2) {
                     addInstruction(Operation.loca, symbolEntry.order);
                 }
