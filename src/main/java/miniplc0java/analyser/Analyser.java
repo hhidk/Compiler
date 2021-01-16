@@ -568,9 +568,9 @@ public final class Analyser {
                     addInstruction(Operation.not);
                     break;
                 case EQ:
+                    addInstruction(Operation.not);
                     break;
                 case NEQ:
-                    addInstruction(Operation.not);
                     break;
                 default:
                     throw new Error("Illegal operator");
@@ -707,7 +707,9 @@ public final class Analyser {
                     throw new Error("Illegal function call");
                 // call function
                 else if (!isStdlib(name)) {
-                    addInstruction(Operation.stackalloc, 1);
+                    if (functionTables.get(name).type != Type.void_ty) {
+                        addInstruction(Operation.stackalloc, 1);
+                    }
                     if (nextIf(TokenType.R_PAREN) == null) {
                         analyseCallParamList();
                         expect(TokenType.R_PAREN);

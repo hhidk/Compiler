@@ -15,4 +15,13 @@ else { while ij > 0 { ij = ij / radix ; char_count = char_count + 1 ; } }
 while char_count > 0
 { char_count = char_count - 1 ; putchar ( itoch ( div_modulo ( i , char_count , radix ) ) ) ; } }
 fn main ( ) -> void
-{ let count : int ; let radix : int ; let number : int ; count = getint ( ) ; while count > 0 { number = getint ( ) ; radix = getint ( ) ; itoa ( number , radix ) ; putln ( ) ; count = count - 1 ; } }
+{ let count : int ;
+let radix : int ;
+let number : int ;
+count = getint ( ) ;
+while count > 0
+{ number = getint ( ) ;
+radix = getint ( ) ;
+itoa ( number , radix ) ;
+putln ( ) ;
+count = count - 1 ; } }
