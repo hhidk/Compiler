@@ -161,7 +161,7 @@ public class Tokenizer {
             case '+':
                 return new Token(TokenType.PLUS, peek, it.previousPos(), it.currentPos());
             case '*':
-                return new Token(TokenType.MINUS, peek, it.previousPos(), it.currentPos());
+                return new Token(TokenType.MUL, peek, it.previousPos(), it.currentPos());
             case ';':
                 return new Token(TokenType.SEMICOLON, peek, it.previousPos(), it.currentPos());
             case '(':
