@@ -568,9 +568,9 @@ public final class Analyser {
                     addInstruction(Operation.not);
                     break;
                 case EQ:
-                    addInstruction(Operation.not);
                     break;
                 case NEQ:
+                    addInstruction(Operation.not);
                     break;
                 default:
                     throw new Error("Illegal operator");
