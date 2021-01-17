@@ -44,6 +44,11 @@ public final class Analyser {
     FunctionTable functionTable;
 
     /**
+     * _start函数
+     */
+    FunctionTable initTable;
+
+    /**
      * 当前偷看的 token
      */
     Token peekedToken = null;
@@ -73,7 +78,7 @@ public final class Analyser {
         this.globalTable = globalTable;
         this.symbolTable = globalTable;
         this.functionTables = functionTables;
-        this.functionTable = init_start();
+        init_start();
         this.argsMap = new LinkedHashMap();
     }
 
@@ -86,13 +91,14 @@ public final class Analyser {
         functionTable.locals = 0;
     }
 
-    public FunctionTable init_start() {
+    public void init_start() {
         String name = "_start";
         int order = 0;
         FunctionTable functionTable = new FunctionTable(order);
+        this.functionTable = functionTable;
+        this.initTable = functionTable;
         functionTables.put(name, functionTable);
         addString(name);
-        return functionTable;
     }
 
     /**
@@ -168,10 +174,17 @@ public final class Analyser {
         }
     }
 
+    /**
+     * 查符号表
+     * 调用SymbolTable类的get方法
+     */
     public SymbolEntry getSymbolEntry(String name) {
         return symbolTable.get(name);
     }
 
+    /**
+     * 添加局部变量或全局变量
+     */
     public SymbolEntry addSymbol(String name, boolean isInitialized, boolean isConstant, Pos curPos, Type type, boolean isArg) throws AnalyzeError {
         int order, scope, def = 1;
         SymbolEntry symbol;
@@ -181,47 +194,49 @@ public final class Analyser {
 
         if (functionTable.isGlobal()) {
             scope = 0;
-        } else if (isArg) {
-            scope = 1;
         } else {
             scope = 2;
         }
 
-        if (isArg) {
-            order = functionTable.args + 1;
-            functionTable.args ++;
-        } else {
-            order = functionTable.locals;
-            functionTable.locals ++;
-        }
+        // 符号根据functionTable中的locals决定
+        // 全局变量个数存在_start函数的locals中
+        order = functionTable.locals ++;
 
         symbol = new SymbolEntry(isConstant, isInitialized, def, type, scope, order);
         symbolTable.put(name, symbol);
         return symbol;
     }
 
+    /**
+     * 添加函数形参
+     * 函数形参暂存到临时表argsMap中
+     * 当分析完函数声明、执行完startFunction方法后，将argsMap添加到symbolTable中
+     */
     public SymbolEntry addArg(String name, boolean isInitialized, boolean isConstant, Pos curPos, Type type, boolean isArg) throws AnalyzeError {
-        int order = functionTable.args, scope = 1, def = 1;
+        int order = functionTable.args ++, scope = 1, def = 1;
         SymbolEntry symbol;
 
         if (argsMap.get(name) != null)
             throw new AnalyzeError(ErrorCode.DuplicateDeclaration, curPos);
-
-        functionTable.args ++;
 
         symbol = new SymbolEntry(isConstant, isInitialized, def, type, scope, order);
         argsMap.put(name, symbol);
         return symbol;
     }
 
+    /**
+     * 添加字符串到全局变量表
+     */
     public SymbolEntry addString(String value) {
-        int order = globalTable.symbolMap.size();
+        int order = initTable.locals ++;
         SymbolEntry symbol = new SymbolEntry(true, true, 1, Type.string_ty, 0, order);
         globalTable.put(value, symbol);
-        functionTables.get("_start").locals ++;
         return symbol;
     }
 
+    /**
+     * 添加指令
+     */
     public Instruction addInstruction(Operation opt, Integer x) {
         Instruction instruction = new Instruction(opt, x);
         this.functionTable.body.add(instruction);
@@ -244,10 +259,18 @@ public final class Analyser {
         this.functionTable.body.remove(this.functionTable.body.size() - 1);
     }
 
+    /**
+     * 获取当前指令在指令集body中的序号
+     */
     public int getInstructionOffset() {
         return this.functionTable.body.size();
     }
 
+    /**
+     * 进入编译函数状态
+     * 添加函数名至全局变量表
+     * 生成新函数结构，并存入函数表
+     */
     public void startFunction(String name, Pos curPos) throws AnalyzeError {
         if (globalTable.get(name) != null) {
             throw new AnalyzeError(ErrorCode.DuplicateDeclaration, curPos);
@@ -257,10 +280,15 @@ public final class Analyser {
         functionTables.put(name, functionTable);
     }
 
+    /**
+     * 退出函数编译状态
+     * return check
+     * 将当前functionTable置换为_start
+     */
     public void endFunction() {
         if (this.functionTable.body.size() == 0 || this.functionTable.body.get(this.functionTable.body.size() - 1).getOpt() != Operation.ret)
             addInstruction(Operation.ret);
-        this.functionTable = functionTables.get("_start");
+        this.functionTable = initTable;
     }
 
     private void analyseProgram() throws CompileError {
