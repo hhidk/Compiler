@@ -48,6 +48,26 @@ public final class Analyser {
      */
     Token peekedToken = null;
 
+    /**
+     * 存放当前块中的Break指令
+     */
+    Instruction breakInstruction;
+
+    /**
+     * 存放break指令的偏移
+     */
+    int breakOffset;
+
+    /**
+     * 存放continue指令
+     */
+    Instruction continueInstruction;
+
+    /**
+     * 存放continue指令的偏移
+     */
+    int continueOffset;
+
     public Analyser(Tokenizer tokenizer, SymbolTable globalTable, HashMap<String, FunctionTable> functionTables) {
         this.tokenizer = tokenizer;
         this.globalTable = globalTable;
@@ -328,7 +348,8 @@ public final class Analyser {
         expect(TokenType.L_BRACE);
         TokenType tokenType = peek().getTokenType();
         while (tokenType == TokenType.LET_KW || tokenType == TokenType.CONST_KW || tokenType == TokenType.IF_KW || tokenType == TokenType.WHILE_KW
-                || tokenType == TokenType.RETURN_KW || tokenType == TokenType.L_BRACE || tokenType == TokenType.SEMICOLON || isExpr()) {
+                || tokenType == TokenType.RETURN_KW || tokenType == TokenType.L_BRACE || tokenType == TokenType.SEMICOLON
+                || tokenType == TokenType.CONTINUE_KW || tokenType == TokenType.BREAK_KW || isExpr()) {
             if (tokenType == TokenType.LET_KW) {
                 analyseLetDeclStmt();
             } else if (tokenType == TokenType.CONST_KW) {
@@ -343,6 +364,10 @@ public final class Analyser {
                 analyseBlockStmt();
             } else if (tokenType == TokenType.SEMICOLON) {
                 next();
+            } else if (tokenType == TokenType.CONTINUE_KW) {
+                analyseContinueStmt();
+            } else if (tokenType == TokenType.BREAK_KW) {
+                analyseBreakStmt();
             } else if (isExpr()){
                 analyseExpr();
                 expect(TokenType.SEMICOLON);
@@ -461,6 +486,17 @@ public final class Analyser {
         int offset3 = getInstructionOffset();
         br2.setX(offset1 - offset3);
         br1.setX(offset3 - offset2);
+
+        if (continueInstruction != null) {
+            continueInstruction.setX(offset1 - continueOffset);
+            continueInstruction = null;
+            continueOffset = 0;
+        }
+        if (breakInstruction != null) {
+            breakInstruction.setX(offset3 - breakOffset);
+            breakInstruction = null;
+            breakOffset = 0;
+        }
     }
 
     private void analyseReturnStmt() throws CompileError {
@@ -492,6 +528,22 @@ public final class Analyser {
         addInstruction(Operation.ret);
     }
 
+    private void analyseContinueStmt() throws CompileError {
+        expect(TokenType.CONTINUE_KW);
+        expect(TokenType.SEMICOLON);
+
+        continueInstruction = addInstruction(Operation.br, 0);
+        continueOffset = getInstructionOffset();
+    }
+
+    private void analyseBreakStmt() throws CompileError {
+        expect(TokenType.BREAK_KW);
+        expect(TokenType.SEMICOLON);
+
+        breakInstruction = addInstruction(Operation.br, 0);
+        breakOffset = getInstructionOffset();
+    }
+
     private SymbolEntry analyseExpr() throws CompileError {
         // expr -> operator_expr | negate_expr | assign_expr | as_expr
         //       | call_expr | literal_expr | ident_expr | group_expr
@@ -512,7 +564,6 @@ public final class Analyser {
             SymbolEntry rsymbolEntry = analyseExpr();
             Type rtype = rsymbolEntry.getType();
 
-            // todo: 判断赋值合法性
             if (lsymbolEntry.def == 2) {
                 throw new Error("Invalid assignment");
             } else if (lsymbolEntry.isConstant) {
@@ -775,7 +826,6 @@ public final class Analyser {
 
     private void analyseCallParamList() throws CompileError {
         // call_param_list -> expr (',' expr)*
-        // todo: 判断调用参数和函数定义参数类型相符
         analyseCallParam();
         while (nextIf(TokenType.COMMA) != null) {
             analyseCallParam();

@@ -1,50 +1,10 @@
-// fn itoch ( i : int ) -> int
-// { if i < 10 { return 48 + i ; } else { return 97 + i - 10 ; } }
-// fn modulo ( a : int , b : int ) -> int
-// { return a - a / b * b ; }
-// fn div_modulo ( x : int , div_cnt : int , rhs : int ) -> int
-// { while div_cnt > 0 { x = x / rhs ; div_cnt = div_cnt - 1 ; } return modulo ( x , rhs ) ; }
-// fn itoa ( i : int , const radix : int ) -> void
-// {
-// let char_count : int = 0 ;
-// let ij : int ;
-// if i < 0 { i = - i ; putchar ( 45 ) ; }
-// ij = i ;
-// if ij == 0 { char_count = 1 ; }
-// else { while ij > 0 { ij = ij / radix ; char_count = char_count + 1 ; } }
-// while char_count > 0
-// { char_count = char_count - 1 ; putchar ( itoch ( div_modulo ( i , char_count , radix ) ) ) ; } }
-// fn main ( ) -> void
-// { let count : int ;
-// let radix : int ;
-// let number : int ;
-// count = getint ( ) ;
-// while count > 0
-// { number = getint ( ) ;
-// radix = getint ( ) ;
-// itoa ( number , radix ) ;
-// putln ( ) ;
-// count = count - 1 ; } }
-
-fn move ( level : int , a : int , c : int ) -> void
-{
-    putint ( level ) ;
-    putchar ( 32 ) ;
-    putchar ( a ) ;
-    putchar ( 32 ) ;
-    putchar ( c ) ;
-    putln ( ) ;
-}
-fn hanoi ( level : int , a : int , b : int , c : int ) -> void
-{
-    if level == 1 {
-        move ( level , a , c ) ;
-    } else {
-        hanoi ( level - 1 , a , c , b ) ;
-        move ( level , a , c ) ;
-        hanoi ( level - 1 , b , a , c ) ;
-    }
-}
 fn main ( ) -> void {
-    hanoi ( 6 , 65 , 66 , 67 ) ;
+    let i:int = 10;
+    while i>0 {
+        i = i - 1;
+        if i == 3 {
+            break;
+        }
+        putint(i);
+    }
 }

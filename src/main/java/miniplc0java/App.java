@@ -28,11 +28,10 @@ public class App {
             return;
         }
 
-        var inputFileName = result.getString("input");
-        var outputFileName = result.getString("asm");
-        System.out.println(inputFileName + " " + outputFileName);
-//        var inputFileName = args[0];
-//        var outputFileName = args[1];
+//        var inputFileName = result.getString("input");
+//        var outputFileName = result.getString("asm");
+        var inputFileName = args[1];
+        var outputFileName = args[3];
 
         InputStream input;
         try {
@@ -46,7 +45,6 @@ public class App {
 
         FileOutputStream output;
         try {
-            // output = new PrintStream(new FileOutputStream(outputFileName));
             output = new FileOutputStream(outputFileName);
         } catch (FileNotFoundException e) {
             System.err.println("Cannot open output file.");
