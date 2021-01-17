@@ -11,25 +11,10 @@ import miniplc0java.tokenizer.StringIter;
 
 import miniplc0java.tokenizer.Tokenizer;
 import miniplc0java.vm.o0;
-import net.sourceforge.argparse4j.*;
-import net.sourceforge.argparse4j.impl.Arguments;
-import net.sourceforge.argparse4j.inf.ArgumentParser;
-import net.sourceforge.argparse4j.inf.ArgumentParserException;
-import net.sourceforge.argparse4j.inf.Namespace;
 
 public class App {
     public static void main(String[] args) throws CompileError, IOException {
-        var argparse = buildArgparse();
-        Namespace result;
-        try {
-            result = argparse.parseArgs(args);
-        } catch (ArgumentParserException e1) {
-            argparse.handleError(e1);
-            return;
-        }
 
-//        var inputFileName = result.getString("input");
-//        var outputFileName = result.getString("asm");
         var inputFileName = args[1];
         var outputFileName = args[3];
 
@@ -69,17 +54,6 @@ public class App {
         for (Byte b : o00.toVmCode()) {
             output.write(b);
         }
-    }
-
-    private static ArgumentParser buildArgparse() {
-        var builder = ArgumentParsers.newFor("miniplc0-java");
-        var parser = builder.build();
-        parser.addArgument("-t", "--tokenize").help("Tokenize the input").action(Arguments.storeTrue());
-        parser.addArgument("-l", "--analyse").help("Analyze the input").action(Arguments.storeTrue());
-        parser.addArgument("-o", "--output").help("Set the output file").required(true).dest("asm")
-                .action(Arguments.store());
-        parser.addArgument("file").required(true).dest("input").action(Arguments.store()).help("Input file");
-        return parser;
     }
 
     private static Tokenizer tokenize(StringIter iter) {
