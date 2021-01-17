@@ -54,24 +54,15 @@ public final class Analyser {
     Token peekedToken = null;
 
     /**
-     * 存放当前块中的Break指令
+     * 当前所在while block
      */
-    Instruction breakInstruction;
+    int blockLevel;
 
-    /**
-     * 存放break指令的偏移
-     */
-    int breakOffset;
+    LinkedList<Integer> levelStack;
 
-    /**
-     * 存放continue指令
-     */
-    Instruction continueInstruction;
+    LinkedList<WhileBlock> blockStack;
 
-    /**
-     * 存放continue指令的偏移
-     */
-    int continueOffset;
+    int maxLevel;
 
     public Analyser(Tokenizer tokenizer, SymbolTable globalTable, HashMap<String, FunctionTable> functionTables) {
         this.tokenizer = tokenizer;
@@ -80,6 +71,10 @@ public final class Analyser {
         this.functionTables = functionTables;
         init_start();
         this.argsMap = new LinkedHashMap();
+        this.blockLevel = 0;
+        this.levelStack = new LinkedList<>();
+        this.blockStack = new LinkedList<>();
+        this.maxLevel = 0;
     }
 
     public void analyse() throws CompileError {
@@ -502,6 +497,9 @@ public final class Analyser {
     private void analyseWhileStmt() throws CompileError {
         // while_stmt -> 'while' expr block_stmt
 
+        this.levelStack.add(this.blockLevel);
+        this.blockLevel = ++maxLevel;
+
         expect(TokenType.WHILE_KW);
         int offset1 = getInstructionOffset();
 
@@ -515,16 +513,22 @@ public final class Analyser {
         br2.setX(offset1 - offset3);
         br1.setX(offset3 - offset2);
 
-        if (continueInstruction != null) {
-            continueInstruction.setX(offset1 - continueOffset);
-            continueInstruction = null;
-            continueOffset = 0;
+        while (!blockStack.isEmpty()) {
+            if (blockStack.getLast().level == this.blockLevel) {
+                WhileBlock block = blockStack.getLast();
+                blockStack.removeLast();
+                if (block.type == 0) {
+                    block.instruction.setX(offset1 - block.offset);
+                } else {
+                    block.instruction.setX(offset3 - block.offset);
+                }
+            } else {
+                break;
+            }
         }
-        if (breakInstruction != null) {
-            breakInstruction.setX(offset3 - breakOffset);
-            breakInstruction = null;
-            breakOffset = 0;
-        }
+
+        this.blockLevel = levelStack.getLast();
+        levelStack.removeLast();
     }
 
     private void analyseReturnStmt() throws CompileError {
@@ -560,16 +564,28 @@ public final class Analyser {
         expect(TokenType.CONTINUE_KW);
         expect(TokenType.SEMICOLON);
 
-        continueInstruction = addInstruction(Operation.br, 0);
-        continueOffset = getInstructionOffset();
+        if (this.blockLevel != 0) {
+            Instruction instruction = addInstruction(Operation.br, 0);
+            int offset = getInstructionOffset();
+            WhileBlock block = new WhileBlock(instruction, offset, this.blockLevel, 0);
+            this.blockStack.add(block);
+        } else {
+            throw new Error("Invalid continue");
+        }
     }
 
     private void analyseBreakStmt() throws CompileError {
         expect(TokenType.BREAK_KW);
         expect(TokenType.SEMICOLON);
 
-        breakInstruction = addInstruction(Operation.br, 0);
-        breakOffset = getInstructionOffset();
+        if (this.blockLevel != 0) {
+            Instruction instruction = addInstruction(Operation.br, 0);
+            int offset = getInstructionOffset();
+            WhileBlock block = new WhileBlock(instruction, offset, this.blockLevel, 1);
+            this.blockStack.add(block);
+        } else {
+            throw new Error("Invalid break");
+        }
     }
 
     private SymbolEntry analyseExpr() throws CompileError {
